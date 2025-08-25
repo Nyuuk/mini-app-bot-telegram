@@ -1,6 +1,11 @@
 package payloads
 
-import "github.com/go-playground/validator/v10"
+import (
+	"time"
+
+	"github.com/Nyuuk/mini-app-bot-telegram/backend/app/entities"
+	"github.com/go-playground/validator/v10"
+)
 
 type LoginPayload struct {
 	Username string `json:"username" validate:"required"`
@@ -57,4 +62,15 @@ func (p *CreateApiKeyPayload) CustomErrorsMessage(errors validator.ValidationErr
 		}
 	}
 	return errorMessages
+}
+
+type ResponseDetailMe struct {
+	User     entities.User `json:"user"`
+	AuthInfo AuthInfo      `json:"auth_info"`
+}
+
+type AuthInfo struct {
+	UserID   uint      `json:"user_id"`
+	AuthType string    `json:"auth_type"`
+	ExpireAt time.Time `json:"expire_at"`
 }

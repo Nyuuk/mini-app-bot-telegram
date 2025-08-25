@@ -47,6 +47,7 @@ func validateApiKey(c *fiber.Ctx, apiKey string) error {
 	c.Locals("user_id", apiKeyEntity.UserID)
 	c.Locals("user", apiKeyEntity.User)
 	c.Locals("auth_type", "api_key")
+	c.Locals("expired_at", apiKeyEntity.ExpiredAt.Unix())
 	c.Locals("api_key_entity", apiKeyEntity)
 
 	log.Info("API Key authentication successful for user: ", apiKeyEntity.UserID)
@@ -87,9 +88,10 @@ func validateJWT(c *fiber.Ctx, authHeader string) error {
 	}
 
 	// Set user info ke context
-	c.Locals("user_id", bodyJWT.UserID)
+	c.Locals("user_id", user.ID)
 	c.Locals("user", user)
 	c.Locals("auth_type", "jwt")
+	c.Locals("expired_at", time.Unix(bodyJWT.ExpireAt, 0))
 	c.Locals("expire_at", bodyJWT.ExpireAt)
 
 	log.Info("JWT authentication successful for user: ", bodyJWT.UserID)

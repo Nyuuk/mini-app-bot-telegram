@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"github.com/Nyuuk/mini-app-bot-telegram/backend/app/entities"
 	"github.com/Nyuuk/mini-app-bot-telegram/backend/app/payloads"
 	"github.com/Nyuuk/mini-app-bot-telegram/backend/app/pkg/database"
 	"github.com/Nyuuk/mini-app-bot-telegram/backend/app/pkg/helpers"
@@ -48,5 +49,12 @@ func (u *UserController) CreateUser(c *fiber.Ctx) error {
 
 func (u *UserController) GetDetailMe(c *fiber.Ctx) error {
 	user := helpers.GetCurrentUser(c)
-	return helpers.Response(c, fiber.StatusOK, "User retrieved successfully", user)
+	var authInfo payloads.AuthInfo
+	var responseDetailMe payloads.ResponseDetailMe
+	authInfo.AuthType = helpers.GetAuthType(c)
+	authInfo.ExpireAt = helpers.GetExpireAt(c)
+	authInfo.UserID = helpers.GetCurrentUserID(c)
+	responseDetailMe.User = user.(entities.User)
+	responseDetailMe.AuthInfo = authInfo
+	return helpers.Response(c, fiber.StatusOK, "User retrieved successfully", responseDetailMe)
 }

@@ -1,8 +1,19 @@
 package helpers
 
 import (
+	"time"
+
 	"github.com/gofiber/fiber/v2"
 )
+
+func GetExpireAt(c *fiber.Ctx) time.Time {
+	// formatin to +7
+	expiredAt, ok := c.Locals("expired_at").(time.Time)
+	if ok {
+		return expiredAt.Add(time.Hour * 7)
+	}
+	return time.Time{}
+}
 
 // GetCurrentUserID mendapatkan user ID dari context
 func GetCurrentUserID(c *fiber.Ctx) uint {
