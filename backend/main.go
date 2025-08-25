@@ -5,6 +5,7 @@ import (
 
 	"github.com/Nyuuk/mini-app-bot-telegram/backend/app/controllers"
 	"github.com/Nyuuk/mini-app-bot-telegram/backend/app/entities"
+	"github.com/Nyuuk/mini-app-bot-telegram/backend/app/middlewares"
 	"github.com/Nyuuk/mini-app-bot-telegram/backend/app/pkg/database"
 	"github.com/gofiber/fiber/v2"
 	"github.com/joho/godotenv"
@@ -43,12 +44,25 @@ func main() {
 	authController := controllers.AuthController{}
 	userController := controllers.UserController{}
 
+	// Public routes (tidak perlu auth)
 	auth := app.Group("/v1/auth").Name("auth")
-	auth.Get("/check", authController.CheckUserApiKey)
+	auth.Post("/login", authController.Login)         // Login untuk dapat JWT
+	auth.Post("/register", userController.CreateUser) // Register user baru
 
-	user := app.Group("/v1/user").Name("user")
-	user.Get("/:id", userController.GetUserById)
-	user.Post("/", userController.CreateUser)
+	// Protected routes (perlu auth via API Key atau JWT)
+	protected := app.Group("/v1", middlewares.AuthMiddleware()).Name("protected")
+
+	// User routes
+	user := protected.Group("/user").Name("user")
+	user.Get("/detail-me", userController.GetDetailMe) // Get all users (admin only)
+	user.Post("/", userController.CreateUser)          // Create user (admin only)
+	user.Get("/:id", userController.GetUserById)       // Get user by ID (admin only)
+
+	// API Key routes
+	// apikey := protected.Group("/apikey").Name("apikey")
+	// apikey.Get("/", authController.GetUserApiKeys)     // Get semua API key user
+	// apikey.Post("/", authController.CreateApiKey)      // Create API key baru
+	// apikey.Delete("/:id", authController.DeleteApiKey) // Delete API key
 
 	app.Listen(":3000")
 }

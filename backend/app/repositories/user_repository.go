@@ -21,3 +21,10 @@ func (r *UserRepository) CreateUser(user *entities.User, tx *gorm.DB, c *fiber.C
 	}
 	return nil
 }
+
+func (r *UserRepository) FindByUsername(username string, user *entities.User, tx *gorm.DB) error {
+	if err := tx.Where("username = ?", username).First(&user).Error; err != nil {
+		return err
+	}
+	return nil
+}

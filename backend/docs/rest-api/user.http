@@ -5,6 +5,7 @@
 ### 1. Get User by ID
 GET {{baseUrl}}/v1/user/1
 Content-Type: application/json
+Authorization: Bearer {{token}}
 
 # Expected Response (200 OK):
 # {
@@ -34,14 +35,33 @@ Content-Type: application/json
 #   "data": null
 # }
 
-### 2. Create User
-POST {{baseUrl}}/v1/user/
+### login
+# @name login
+POST {{baseUrl}}/v1/auth/login
 Content-Type: application/json
 
 {
-  "username": "jane_doe",
-  "email": "jane@example.com",
-  "password": "securepassword123"
+  "username": "nyuuk",
+  "password": "hello_world"
+}
+
+
+### Get Detail Me
+GET {{baseUrl}}/v1/user/detail-me
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+
+
+### Create User
+POST {{baseUrl}}/v1/user/
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "username": "nyuuk",
+  "email": "adnan@nyuuk.my.id",
+  "password": "hello_world"
 }
 
 # Expected Response (201 Created):
@@ -142,3 +162,5 @@ Content-Type: application/json
 
 ### Environment Variables
 @baseUrl = http://localhost:3000
+@token = {{login.response.body.data.token}}
+# @token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHBpcmVfYXQiOjE3NTYxNDE4NzksInVzZXJfaWQiOiIzIiwiaWF0IjoxNzU2MTQxNzk2fQ.BJK4nlvCdh46cEcMb3Xkp05JWvPHKHxBEPz07MUC_VQ

@@ -41,7 +41,12 @@ func (u *UserController) CreateUser(c *fiber.Ctx) error {
 		log.Error("CreateUser: ", err)
 		return helpers.ResponseErrorInternal(c, err)
 	}
-	
+
 	return nil
 
+}
+
+func (u *UserController) GetDetailMe(c *fiber.Ctx) error {
+	user := helpers.GetCurrentUser(c)
+	return helpers.Response(c, fiber.StatusOK, "User retrieved successfully", user)
 }
