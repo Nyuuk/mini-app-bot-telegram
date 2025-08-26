@@ -18,6 +18,7 @@ func ValidateBody(payload Payload, c *fiber.Ctx) error {
 
 	// Parse the request body
 	if err := c.BodyParser(&payload); err != nil {
+		log.Error("Error parsing request body: ", err)
 		return Response(c, fiber.StatusBadRequest, "Invalid payload", nil)
 	}
 	log.Debug("Validating after body parser ", payload)

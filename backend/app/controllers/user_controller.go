@@ -58,3 +58,23 @@ func (u *UserController) GetDetailMe(c *fiber.Ctx) error {
 	responseDetailMe.AuthInfo = authInfo
 	return helpers.Response(c, fiber.StatusOK, "User retrieved successfully", responseDetailMe)
 }
+
+func (u *UserController) CreateApiKey(c *fiber.Ctx) error {
+	payload := payloads.CreateApiKeyPayload{}
+	if err := helpers.ValidateBody(&payload, c); err != nil {
+		log.Error("ValidateBody Controller CreateApiKey: ", err)
+		return helpers.ResponseErrorBadRequest(c, "Invalid request body", err)
+	}
+
+	tx := database.ClientPostgres.Begin()
+	defer tx.Rollback()
+
+	log.Debug("Calling service.CreateApiKey with payload: ", payload)
+	if err := u.UserService.CreateApiKey(&payload, c, tx); err != nil {
+		tx.Rollback()
+		log.Error("CreateApiKey Controller: ", err)
+		return helpers.ResponseErrorInternal(c, err)
+	}
+
+	return nil
+}

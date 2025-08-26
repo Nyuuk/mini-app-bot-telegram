@@ -57,6 +57,7 @@ func main() {
 	user.Get("/detail-me", userController.GetDetailMe) // Get all users (admin only)
 	user.Post("/", userController.CreateUser)          // Create user (admin only)
 	user.Get("/:id", userController.GetUserById)       // Get user by ID (admin only)
+	user.Post("/api-key", userController.CreateApiKey) // Create API key baru
 
 	// API Key routes
 	// apikey := protected.Group("/apikey").Name("apikey")

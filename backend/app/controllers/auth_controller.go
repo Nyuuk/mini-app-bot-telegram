@@ -42,26 +42,6 @@ func (a *AuthController) Login(c *fiber.Ctx) error {
 // 	return helpers.Response(c, fiber.StatusOK, "API keys retrieved successfully", apiKeys)
 // }
 
-// CreateApiKey membuat API key baru untuk user yang login
-// func (a *AuthController) CreateApiKey(c *fiber.Ctx) error {
-// 	payload := payloads.CreateApiKeyPayload{}
-// 	if err := helpers.ValidateBody(&payload, c); err != nil {
-// 		return helpers.ResponseErrorBadRequest(c, "Invalid request body", err)
-// 	}
-
-// 	userID := helpers.GetCurrentUserID(c)
-// 	tx := database.ClientPostgres.Begin()
-// 	defer tx.Rollback()
-
-// 	apiKey, err := a.AuthService.CreateApiKey(c, tx, userID, &payload)
-// 	if err != nil {
-// 		return helpers.ResponseErrorInternal(c, err)
-// 	}
-
-// 	tx.Commit()
-// 	return helpers.Response(c, fiber.StatusCreated, "API key created successfully", apiKey)
-// }
-
 // DeleteApiKey menghapus API key user
 // func (a *AuthController) DeleteApiKey(c *fiber.Ctx) error {
 // 	apiKeyID := c.Params("id")

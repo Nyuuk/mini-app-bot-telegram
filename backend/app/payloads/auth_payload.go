@@ -48,22 +48,6 @@ func (p *RegisterPayload) CustomErrorsMessage(errors validator.ValidationErrors)
 	return errorMessages
 }
 
-type CreateApiKeyPayload struct {
-	Description string `json:"description" validate:"required"`
-}
-
-func (p *CreateApiKeyPayload) CustomErrorsMessage(errors validator.ValidationErrors) []map[string]string {
-	var errorMessages []map[string]string
-	for _, err := range errors {
-		field := err.Field()
-		switch field {
-		case "Description":
-			errorMessages = append(errorMessages, map[string]string{"description": "Description is required"})
-		}
-	}
-	return errorMessages
-}
-
 type ResponseDetailMe struct {
 	User     entities.User `json:"user"`
 	AuthInfo AuthInfo      `json:"auth_info"`

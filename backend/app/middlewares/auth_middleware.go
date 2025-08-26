@@ -73,7 +73,7 @@ func validateJWT(c *fiber.Ctx, authHeader string) error {
 	}
 
 	// Validasi user ID
-	if bodyJWT.UserID == "" {
+	if bodyJWT.UserID == 0 {
 		return helpers.Response(c, fiber.StatusForbidden, "Invalid token payload", nil)
 	}
 

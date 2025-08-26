@@ -14,7 +14,7 @@ func Response(c *fiber.Ctx, status int, message string, data interface{}) error 
 }
 
 func ResponseErrorInternal(c *fiber.Ctx, err any) error {
-
+	log.Error("Internal server error: ", err)
 	return Response(c, fiber.StatusInternalServerError, "Internal server error", nil)
 }
 

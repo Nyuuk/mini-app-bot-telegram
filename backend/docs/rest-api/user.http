@@ -49,7 +49,8 @@ Content-Type: application/json
 ### Get Detail Me
 GET {{baseUrl}}/v1/user/detail-me
 Content-Type: application/json
-Authorization: Bearer {{token}}
+# Authorization: Bearer {{token}}
+X-API-Key: {{tokenapikey}}
 
 
 
@@ -64,55 +65,12 @@ Authorization: Bearer {{token}}
   "password": "hello_world"
 }
 
-# Expected Response (201 Created):
-# {
-#   "status": 201,
-#   "message": "User created successfully",
-#   "data": {
-#     "id": 2,
-#     "username": "jane_doe",
-#     "password_hash": "hashed_password_string",
-#     "email": "jane@example.com",
-#     "created_at": "2024-01-01T00:00:00Z",
-#     "updated_at": "2024-01-01T00:00:00Z"
-#   }
-# }
+## 3. Create User - Invalid Data Examples
 
-# Error Response (400 Bad Request) - Validation Errors:
-# {
-#   "status": 400,
-#   "message": "Validation failed",
-#   "data": [
-#     {
-#       "field": "username",
-#       "tag": "required",
-#       "message": "Username is required"
-#     },
-#     {
-#       "field": "email",
-#       "tag": "email",
-#       "message": "Invalid email format"
-#     },
-#     {
-#       "field": "password",
-#       "tag": "min",
-#       "message": "Password must be at least 8 characters"
-#     }
-#   ]
-# }
-
-# Error Response (409 Conflict) - Duplicate Username/Email:
-# {
-#   "status": 409,
-#   "message": "Username or email already exists",
-#   "data": null
-# }
-
-### 3. Create User - Invalid Data Examples
-
-# Missing required fields
+### Missing required fields
 POST {{baseUrl}}/v1/user/
 Content-Type: application/json
+Authorization: Bearer {{token}}
 
 {
   "username": "",
@@ -120,9 +78,11 @@ Content-Type: application/json
   "password": "123"
 }
 
-# Username too short
+
+### Username too short
 POST {{baseUrl}}/v1/user/
 Content-Type: application/json
+Authorization: Bearer {{token}}
 
 {
   "username": "ab",
@@ -130,9 +90,10 @@ Content-Type: application/json
   "password": "password123"
 }
 
-# Username too long
+### Username too long
 POST {{baseUrl}}/v1/user/
 Content-Type: application/json
+Authorization: Bearer {{token}}
 
 {
   "username": "very_long_username_that_exceeds_twenty_characters",
@@ -140,9 +101,10 @@ Content-Type: application/json
   "password": "password123"
 }
 
-# Invalid email format
+### Invalid email format
 POST {{baseUrl}}/v1/user/
 Content-Type: application/json
+Authorization: Bearer {{token}}
 
 {
   "username": "testuser",
@@ -150,9 +112,10 @@ Content-Type: application/json
   "password": "password123"
 }
 
-# Password too short
+### Password too short
 POST {{baseUrl}}/v1/user/
 Content-Type: application/json
+Authorization: Bearer {{token}}
 
 {
   "username": "testuser",
@@ -160,7 +123,19 @@ Content-Type: application/json
   "password": "123"
 }
 
+
+### Create API Key
+POST {{baseUrl}}/v1/user/api-key
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "description": "API key for testing",
+  "is_active": true,
+  "expired_at": "2025-08-26T05:00:00Z"
+}
 ### Environment Variables
 @baseUrl = http://localhost:3000
 @token = {{login.response.body.data.token}}
 # @token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHBpcmVfYXQiOjE3NTYxNDE4NzksInVzZXJfaWQiOiIzIiwiaWF0IjoxNzU2MTQxNzk2fQ.BJK4nlvCdh46cEcMb3Xkp05JWvPHKHxBEPz07MUC_VQ
+@tokenapikey = afa605f2690af6c45066405b7f604f643d3ffcec8485e404bf498626de502a50

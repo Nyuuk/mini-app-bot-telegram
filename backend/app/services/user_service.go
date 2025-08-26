@@ -1,6 +1,9 @@
 package services
 
 import (
+	"fmt"
+	"strconv"
+
 	"github.com/Nyuuk/mini-app-bot-telegram/backend/app/entities"
 	"github.com/Nyuuk/mini-app-bot-telegram/backend/app/payloads"
 	"github.com/Nyuuk/mini-app-bot-telegram/backend/app/pkg/helpers"
@@ -21,7 +24,12 @@ func (u *UserService) GetUser(c *fiber.Ctx, tx *gorm.DB) error {
 	}
 
 	var user entities.User
-	if err := u.UserRepository.FindByID(id, &user, tx); err != nil {
+	// parse id to uint
+	userID, err := strconv.ParseUint(id, 10, 64)
+	if err != nil {
+		return helpers.ResponseErrorBadRequest(c, "Invalid ID", nil)
+	}
+	if err := u.UserRepository.FindByID(uint(userID), &user, tx); err != nil {
 		return err
 	}
 
@@ -49,4 +57,51 @@ func (u *UserService) CreateUser(payload *payloads.CreateUserPayload, c *fiber.C
 	log.Debug("CreateUser service: ", user)
 	return helpers.Response(c, fiber.StatusCreated, "User created successfully", user)
 
+}
+
+func (u *UserService) CreateApiKey(payload *payloads.CreateApiKeyPayload, c *fiber.Ctx, tx *gorm.DB) error {
+	log.Debug("CreateApiKey service")
+	userID := helpers.GetCurrentUserID(c)
+
+	log.Debug("CreateApiKey service: Finding user by ID: ", userID)
+	var user entities.User
+	if err := u.UserRepository.FindByID(userID, &user, tx); err != nil {
+		return err
+	}
+	log.Debug("CreateApiKey service: User found: ", user)
+
+	var apiKey entities.APIKey
+	apiKey.UserID = userID
+	apiKey.Description = payload.Description
+	apiKey.IsActive = payload.IsActive
+	apiKey.ExpiredAt = payload.ExpiredAt
+	apiKeyGenerated, err := helpers.GenerateAPIKey(32)
+	log.Debug("CreateApiKey service: Generated API key: ", apiKeyGenerated)
+	if err != nil {
+		return err
+	}
+	// encrypt api key
+	// apiKey.APIKey = helpers.HashPassword(apiKeyGenerated)
+	apiKey.APIKey = apiKeyGenerated
+
+	log.Debug(fmt.Sprintf("CreateApiKey service: Creating API key: %s Description: %s ExpiredAt: %s IsActive: %t", apiKeyGenerated, payload.Description, payload.ExpiredAt, payload.IsActive))
+	if err := u.UserRepository.CreateApiKey(&apiKey, tx, c); err != nil {
+		log.Error("CreateApiKey service: Error creating API key: ", err)
+		return err
+	}
+
+	log.Debug("CreateApiKey service: Committing transaction")
+	// tx.Rollback()
+	if err := tx.Commit().Error; err != nil {
+		log.Error("CreateApiKey service: Error committing transaction: ", err)
+		return err
+	}
+
+	var response payloads.ResponseCreateApiKeyPayload
+	response.APIKey = apiKeyGenerated
+	response.Description = apiKey.Description
+	response.ExpiredAt = apiKey.ExpiredAt
+	response.IsActive = apiKey.IsActive
+
+	return helpers.Response(c, fiber.StatusOK, "API key created successfully", response)
 }

@@ -8,7 +8,7 @@ import (
 
 type UserRepository struct{}
 
-func (r *UserRepository) FindByID(id string, user *entities.User, tx *gorm.DB) error {
+func (r *UserRepository) FindByID(id uint, user *entities.User, tx *gorm.DB) error {
 	if err := tx.Where("id = ?", id).First(&user).Error; err != nil {
 		return err
 	}
@@ -24,6 +24,13 @@ func (r *UserRepository) CreateUser(user *entities.User, tx *gorm.DB, c *fiber.C
 
 func (r *UserRepository) FindByUsername(username string, user *entities.User, tx *gorm.DB) error {
 	if err := tx.Where("username = ?", username).First(&user).Error; err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r *UserRepository) CreateApiKey(apiKey *entities.APIKey, tx *gorm.DB, c *fiber.Ctx) error {
+	if err := tx.WithContext(c.Context()).Create(&apiKey).Error; err != nil {
 		return err
 	}
 	return nil

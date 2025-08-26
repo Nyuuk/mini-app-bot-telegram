@@ -2,13 +2,14 @@ package helpers
 
 import (
 	"errors"
+	"strconv"
 
 	"github.com/golang-jwt/jwt/v5"
 )
 
 type JWTBody struct {
-	UserID   string `json:"user_id"`
-	ExpireAt int64  `json:"expire_at"`
+	UserID   uint  `json:"user_id"`
+	ExpireAt int64 `json:"expire_at"`
 }
 
 func GenerateJWT(userID string, expireAt int64) (string, error) {
@@ -40,8 +41,12 @@ func VerifyJWT(tokenString string, secretKey string) (JWTBody, error) {
 		return JWTBody{}, errors.New("invalid token claims")
 	}
 
+	userID, err := strconv.ParseUint(claims["user_id"].(string), 10, 64)
+	if err != nil {
+		return JWTBody{}, errors.New("invalid user id")
+	}
 	return JWTBody{
-		UserID:   claims["user_id"].(string),
+		UserID:   uint(userID),
 		ExpireAt: int64(claims["expire_at"].(float64)),
 	}, nil
 }

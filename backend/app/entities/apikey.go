@@ -10,7 +10,7 @@ type APIKey struct {
 	Description string     `json:"description" gorm:"type:text;default:null"`
 	IsActive    bool       `json:"is_active" gorm:"default:true"`
 	CreatedAt   time.Time  `json:"created_at" gorm:"autoCreateTime"`
-	ExpiredAt   *time.Time `json:"expired_at" gorm:"autoUpdateTime"`
+	ExpiredAt   *time.Time `json:"expired_at" gorm:"not null"`
 
 	User User `gorm:"foreignKey:UserID"`
 }

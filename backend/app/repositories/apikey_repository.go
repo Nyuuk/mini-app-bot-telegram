@@ -8,7 +8,7 @@ import (
 type ApiKeyRepository struct{}
 
 func (r *ApiKeyRepository) FindByApiKey(apiKey string, apiKeyEntity *entities.APIKey, tx *gorm.DB) error {
-	if err := tx.Where("api_key = ? and is_active = ?", apiKey, true).First(&apiKeyEntity).Error; err != nil {
+	if err := tx.Preload("User").Where("api_key = ? and is_active = ?", apiKey, true).First(&apiKeyEntity).Error; err != nil {
 		return err
 	}
 	return nil
