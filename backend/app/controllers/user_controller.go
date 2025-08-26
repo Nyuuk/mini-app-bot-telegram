@@ -16,10 +16,39 @@ type UserController struct {
 
 func (u *UserController) GetUserById(c *fiber.Ctx) error {
 	tx := database.ClientPostgres
-	if err := u.UserService.GetUser(c, tx); err != nil {
+	if err := u.UserService.GetUserById(c, tx); err != nil {
 		return helpers.ResponseErrorInternal(c, err)
 	}
 
+	return nil
+}
+
+func (u *UserController) GetAllUsers(c *fiber.Ctx) error {
+	tx := database.ClientPostgres
+	if err := u.UserService.GetAllUsers(c, tx); err != nil {
+		return helpers.ResponseErrorInternal(c, err)
+	}
+
+	return nil
+}
+
+func (u *UserController) GetDetailMe(c *fiber.Ctx) error {
+	user := helpers.GetCurrentUser(c)
+	var authInfo payloads.AuthInfo
+	var responseDetailMe payloads.ResponseDetailMe
+	authInfo.AuthType = helpers.GetAuthType(c)
+	authInfo.ExpireAt = helpers.GetExpireAt(c)
+	authInfo.UserID = helpers.GetCurrentUserID(c)
+	responseDetailMe.User = user.(entities.User)
+	responseDetailMe.AuthInfo = authInfo
+	return helpers.Response(c, fiber.StatusOK, "User retrieved successfully", responseDetailMe)
+}
+
+func (u *UserController) DeleteUserById(c *fiber.Ctx) error {
+	tx := database.ClientPostgres
+	if err := u.UserService.DeleteUserById(c, tx); err != nil {
+		return helpers.ResponseErrorInternal(c, err)
+	}
 	return nil
 }
 
@@ -47,17 +76,6 @@ func (u *UserController) CreateUser(c *fiber.Ctx) error {
 
 }
 
-func (u *UserController) GetDetailMe(c *fiber.Ctx) error {
-	user := helpers.GetCurrentUser(c)
-	var authInfo payloads.AuthInfo
-	var responseDetailMe payloads.ResponseDetailMe
-	authInfo.AuthType = helpers.GetAuthType(c)
-	authInfo.ExpireAt = helpers.GetExpireAt(c)
-	authInfo.UserID = helpers.GetCurrentUserID(c)
-	responseDetailMe.User = user.(entities.User)
-	responseDetailMe.AuthInfo = authInfo
-	return helpers.Response(c, fiber.StatusOK, "User retrieved successfully", responseDetailMe)
-}
 
 func (u *UserController) CreateApiKey(c *fiber.Ctx) error {
 	payload := payloads.CreateApiKeyPayload{}

@@ -28,6 +28,7 @@ func main() {
 		&entities.User{},
 		&entities.APIKey{},
 		&entities.TelegramUser{},
+		&entities.Overtime{},
 	); err != nil {
 		log.Fatal("Error migrating database: ", err)
 	}
@@ -57,6 +58,8 @@ func main() {
 	user.Get("/detail-me", userController.GetDetailMe) // Get all users (admin only)
 	user.Post("/", userController.CreateUser)          // Create user (admin only)
 	user.Get("/:id", userController.GetUserById)       // Get user by ID (admin only)
+	user.Delete("/:id", userController.DeleteUserById) // Delete user by ID (admin only)
+	user.Get("/", userController.GetAllUsers)          // Get all users (admin only)
 	user.Post("/api-key", userController.CreateApiKey) // Create API key baru
 
 	// API Key routes

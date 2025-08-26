@@ -35,3 +35,17 @@ func (r *UserRepository) CreateApiKey(apiKey *entities.APIKey, tx *gorm.DB, c *f
 	}
 	return nil
 }
+
+func (r *UserRepository) FindAll(users *[]entities.User, tx *gorm.DB) error {
+	if err := tx.Find(&users).Error; err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r *UserRepository) DeleteUserById(id uint, tx *gorm.DB) error {
+	if err := tx.Delete(&entities.User{}, id).Error; err != nil {
+		return err
+	}
+	return nil
+}

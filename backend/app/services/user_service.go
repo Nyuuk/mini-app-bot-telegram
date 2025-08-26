@@ -17,7 +17,7 @@ type UserService struct {
 	UserRepository repositories.UserRepository
 }
 
-func (u *UserService) GetUser(c *fiber.Ctx, tx *gorm.DB) error {
+func (u *UserService) GetUserById(c *fiber.Ctx, tx *gorm.DB) error {
 	id := c.Params("id")
 	if id == "" {
 		return helpers.ResponseErrorBadRequest(c, "ID is required", nil)
@@ -30,10 +30,46 @@ func (u *UserService) GetUser(c *fiber.Ctx, tx *gorm.DB) error {
 		return helpers.ResponseErrorBadRequest(c, "Invalid ID", nil)
 	}
 	if err := u.UserRepository.FindByID(uint(userID), &user, tx); err != nil {
+		if helpers.IsNotFoundError(err) {
+			return helpers.ResponseErrorNotFound(c, nil)
+		}
 		return err
 	}
 
 	return helpers.Response(c, fiber.StatusOK, "User retrieved successfully", user)
+}
+
+func (u *UserService) GetAllUsers(c *fiber.Ctx, tx *gorm.DB) error {
+	var users []entities.User
+	if err := u.UserRepository.FindAll(&users, tx); err != nil {
+		return err
+	}
+	return helpers.Response(c, fiber.StatusOK, "Users retrieved successfully", users)
+}
+
+func (u *UserService) DeleteUserById(c *fiber.Ctx, tx *gorm.DB) error {
+	id := c.Params("id")
+	if id == "" {
+		return helpers.ResponseErrorBadRequest(c, "ID is required", nil)
+	}
+
+	var user entities.User
+	userID, err := strconv.ParseUint(id, 10, 64)
+	if err != nil {
+		return helpers.ResponseErrorBadRequest(c, "Invalid ID", nil)
+	}
+	if err := u.UserRepository.FindByID(uint(userID), &user, tx); err != nil {
+		if helpers.IsNotFoundError(err) {
+			return helpers.ResponseErrorNotFound(c, nil)
+		}
+		return err
+	}
+
+	if err := u.UserRepository.DeleteUserById(uint(userID), tx); err != nil {
+		return err
+	}
+
+	return helpers.Response(c, fiber.StatusOK, "User deleted successfully", user)
 }
 
 func (u *UserService) CreateUser(payload *payloads.CreateUserPayload, c *fiber.Ctx, tx *gorm.DB) error {
