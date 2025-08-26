@@ -44,6 +44,17 @@ func (u *UserController) GetDetailMe(c *fiber.Ctx) error {
 	return helpers.Response(c, fiber.StatusOK, "User retrieved successfully", responseDetailMe)
 }
 
+func (u *UserController) GetApiKeyFromUserActive(c *fiber.Ctx) error {
+	log.Debug("GetApiKeyFromUserActive Controller")
+	tx := database.ClientPostgres
+	log.Debug("GetApiKeyFromUserActive Controller: calling service GetApiKeyFromUserActive")
+	if err := u.UserService.GetApiKeyFromUserActive(c, tx); err != nil {
+		log.Error("GetApiKeyFromUserActive Controller: error calling service GetApiKeyFromUserActive: ", err)
+		return helpers.ResponseErrorInternal(c, err)
+	}
+	return nil
+}
+
 func (u *UserController) DeleteUserById(c *fiber.Ctx) error {
 	tx := database.ClientPostgres
 	if err := u.UserService.DeleteUserById(c, tx); err != nil {

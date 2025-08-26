@@ -9,7 +9,7 @@ import (
 type UserRepository struct{}
 
 func (r *UserRepository) FindByID(id uint, user *entities.User, tx *gorm.DB) error {
-	if err := tx.Where("id = ?", id).First(&user).Error; err != nil {
+	if err := tx.Preload("APIKeys").Where("id = ?", id).First(&user).Error; err != nil {
 		return err
 	}
 	return nil

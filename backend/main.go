@@ -55,12 +55,13 @@ func main() {
 
 	// User routes
 	user := protected.Group("/user").Name("user")
-	user.Get("/detail-me", userController.GetDetailMe) // Get all users (admin only)
-	user.Post("/", userController.CreateUser)          // Create user (admin only)
-	user.Get("/:id", userController.GetUserById)       // Get user by ID (admin only)
-	user.Delete("/:id", userController.DeleteUserById) // Delete user by ID (admin only)
-	user.Get("/", userController.GetAllUsers)          // Get all users (admin only)
-	user.Post("/api-key", userController.CreateApiKey) // Create API key baru
+	user.Get("/detail-me", userController.GetDetailMe)           // Get all users (admin only)
+	user.Post("/", userController.CreateUser)                    // Create user (admin only)
+	user.Get("/", userController.GetAllUsers)                    // Get all users (admin only)
+	user.Get("/api-key", userController.GetApiKeyFromUserActive) // Get API key from user active
+	user.Post("/api-key", userController.CreateApiKey)           // Create API key baru
+	user.Get("/:id", userController.GetUserById)                 // Get user by ID (admin only)
+	user.Delete("/:id", userController.DeleteUserById)           // Delete user by ID (admin only)
 
 	// API Key routes
 	// apikey := protected.Group("/apikey").Name("apikey")

@@ -47,6 +47,21 @@ func (u *UserService) GetAllUsers(c *fiber.Ctx, tx *gorm.DB) error {
 	return helpers.Response(c, fiber.StatusOK, "Users retrieved successfully", users)
 }
 
+func (u *UserService) GetApiKeyFromUserActive(c *fiber.Ctx, tx *gorm.DB) error {
+	log.Debug("GetApiKeyFromUserActive service")
+	userID := helpers.GetCurrentUserID(c)
+	log.Debug("GetApiKeyFromUserActive service: userID: ", userID)
+	var user entities.User
+	if err := u.UserRepository.FindByID(userID, &user, tx); err != nil {
+		if helpers.IsNotFoundError(err) {
+			return helpers.ResponseErrorNotFound(c, nil)
+		}
+		log.Error("GetApiKeyFromUserActive service: error finding user by ID: ", err)
+		return err
+	}
+	return helpers.Response(c, fiber.StatusOK, "API key retrieved successfully", user.APIKeys)
+}
+
 func (u *UserService) DeleteUserById(c *fiber.Ctx, tx *gorm.DB) error {
 	id := c.Params("id")
 	if id == "" {

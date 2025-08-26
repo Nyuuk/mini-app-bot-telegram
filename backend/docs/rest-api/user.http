@@ -116,8 +116,16 @@ Authorization: Bearer {{token}}
   "is_active": true,
   "expired_at": "2025-08-26T05:00:00Z"
 }
+
+### Get API Key from User Active
+GET {{baseUrl}}/v1/user/api-key
+Content-Type: application/json
+# Authorization: Bearer {{token}}
+X-API-Key: {{tokenapikey}}
+
 ### Environment Variables
 @baseUrl = http://localhost:3000
 @token = {{login.response.body.data.token}}
 # @token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHBpcmVfYXQiOjE3NTYxNDE4NzksInVzZXJfaWQiOiIzIiwiaWF0IjoxNzU2MTQxNzk2fQ.BJK4nlvCdh46cEcMb3Xkp05JWvPHKHxBEPz07MUC_VQ
-@tokenapikey = afa605f2690af6c45066405b7f604f643d3ffcec8485e404bf498626de502a50
+# @tokenapikey = afa605f2690af6c45066405b7f604f643d3ffcec8485e404bf498626de502a50
+@tokenapikey = $2a$10$DNRE.BxH/C5gZpmm/DOZfey1JJSSnbHUlZbOtPZW3eqcozYort6eO
