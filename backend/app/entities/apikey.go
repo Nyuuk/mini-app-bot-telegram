@@ -12,7 +12,7 @@ type APIKey struct {
 	CreatedAt   time.Time  `json:"created_at" gorm:"autoCreateTime"`
 	ExpiredAt   *time.Time `json:"expired_at" gorm:"not null"`
 
-	User User `gorm:"foreignKey:UserID"`
+	User User `json:"-" gorm:"foreignKey:UserID"`
 }
 
 // tablename

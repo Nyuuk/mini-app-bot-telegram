@@ -1,7 +1,10 @@
 package repositories
 
 import (
+	"time"
+
 	"github.com/Nyuuk/mini-app-bot-telegram/backend/app/entities"
+	"github.com/Nyuuk/mini-app-bot-telegram/backend/app/pkg/helpers"
 	"github.com/gofiber/fiber/v2"
 	"gorm.io/gorm"
 )
@@ -16,9 +19,14 @@ func (r *UserRepository) FindByID(id uint, user *entities.User, tx *gorm.DB) err
 }
 
 func (r *UserRepository) CreateUser(user *entities.User, tx *gorm.DB, c *fiber.Ctx) error {
+	start := time.Now()
+
 	if err := tx.WithContext(c.Context()).Create(&user).Error; err != nil {
+		helpers.LogDatabase("create", user.TableName(), time.Since(start), 0, err)
 		return err
 	}
+
+	helpers.LogDatabase("create", user.TableName(), time.Since(start), 1, nil)
 	return nil
 }
 

@@ -13,3 +13,10 @@ func (r *ApiKeyRepository) FindByApiKey(apiKey string, apiKeyEntity *entities.AP
 	}
 	return nil
 }
+
+func (r *ApiKeyRepository) FindByUserID(userID uint, apiKeyEntity *entities.APIKey, tx *gorm.DB) error {
+	if err := tx.Where("user_id = ?", userID).First(&apiKeyEntity).Error; err != nil {
+		return err
+	}
+	return nil
+}

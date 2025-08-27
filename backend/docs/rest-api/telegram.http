@@ -1,0 +1,20 @@
+### Variables untuk Telegram Bot API
+@baseUrl = {{$dotenv baseUrl}}
+@apiVersion = {{$dotenv apiVersion}}
+
+### create new user telegram
+POST {{baseUrl}}/{{apiVersion}}/telegram
+Content-Type: application/json
+X-API-Key: {{$dotenv apiKey}}
+
+{
+    "telegram_id": 1234567891,
+    "username": "nyuuk",
+    "first_name": "Nyuuk",
+    "last_name": "Nyuuk"
+}
+
+### get all user telegram  by user active now
+GET {{baseUrl}}/{{apiVersion}}/telegram
+Content-Type: application/json
+X-API-Key: {{$dotenv apiKey}}

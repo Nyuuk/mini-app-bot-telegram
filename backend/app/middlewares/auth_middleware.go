@@ -1,6 +1,7 @@
 package middlewares
 
 import (
+	"strconv"
 	"strings"
 	"time"
 
@@ -50,7 +51,15 @@ func validateApiKey(c *fiber.Ctx, apiKey string) error {
 	c.Locals("expired_at", apiKeyEntity.ExpiredAt.Unix())
 	c.Locals("api_key_entity", apiKeyEntity)
 
-	log.Info("API Key authentication successful for user: ", apiKeyEntity.UserID)
+	// log.Info("API Key authentication successful for user: ", apiKeyEntity.UserID)
+	helpers.LogAuth("api_key_authentication_success", strconv.Itoa(int(apiKeyEntity.UserID)), true, map[string]interface{}{
+		"user":         apiKeyEntity.User,
+		"api_key_id":   apiKeyEntity.ID,
+		"api_key_hash": apiKeyEntity.APIKey, // Log hash instead of plain API key
+		"ip_address":   c.IP(),
+		"user_agent":   c.Get("User-Agent"),
+		"path":         c.Path(),
+	})
 	return c.Next()
 }
 
@@ -82,7 +91,8 @@ func validateJWT(c *fiber.Ctx, authHeader string) error {
 	tx := database.ClientPostgres
 	user := entities.User{}
 
-	log.Info("Checking user JWT in database: ", bodyJWT.UserID)
+	// log.Info("Checking user JWT in database: ", bodyJWT.UserID)
+	helpers.Logger.Info().Uint("user_id", bodyJWT.UserID).Msg("Checking user JWT in database")
 	if err := userRepository.FindByID(bodyJWT.UserID, &user, tx); err != nil {
 		return helpers.Response(c, fiber.StatusForbidden, "User not found", nil)
 	}
@@ -94,7 +104,15 @@ func validateJWT(c *fiber.Ctx, authHeader string) error {
 	c.Locals("expired_at", time.Unix(bodyJWT.ExpireAt, 0))
 	c.Locals("expire_at", bodyJWT.ExpireAt)
 
-	log.Info("JWT authentication successful for user: ", bodyJWT.UserID)
+	// log.Info("JWT authentication successful for user: ", bodyJWT.UserID)
+	helpers.LogAuth("jwt_authentication_success", strconv.Itoa(int(bodyJWT.UserID)), true, map[string]interface{}{
+		"user":          user,
+		"jwt_user_id":   bodyJWT.UserID,
+		"jwt_expire_at": time.Unix(bodyJWT.ExpireAt, 0).Format("2006-01-02 15:04:05"),
+		"ip_address":    c.IP(),
+		"user_agent":    c.Get("User-Agent"),
+		"path":          c.Path(),
+	})
 	return c.Next()
 }
 

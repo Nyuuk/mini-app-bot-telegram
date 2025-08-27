@@ -1,0 +1,47 @@
+### 1. Login
+POST {{$dotenv baseUrl}}/{{$dotenv apiVersion}}/auth/login
+Content-Type: application/json
+
+{
+    "username": "nyuuk",
+    "password": "hello_world"
+}
+
+### 2. Register
+POST {{$dotenv baseUrl}}/{{$dotenv apiVersion}}/auth/register
+Content-Type: application/json
+
+{
+    "username": "nyuuk",
+    "email": "adnan@nyuuk.my.id",
+    "password": "hello_world"
+}
+
+### 3. Get User Profile (dengan JWT Token)
+GET {{$dotenv baseUrl}}/{{$dotenv apiVersion}}/user/detail-me
+Authorization: Bearer {{$dotenv jwtToken}}
+
+### 4. Get User Profile (dengan API Key)
+GET {{$dotenv baseUrl}}/{{$dotenv apiVersion}}/user/detail-me
+X-API-Key: {{$dotenv apiKey}}
+
+
+### 5. Create API Key
+POST {{$dotenv baseUrl}}/{{$dotenv apiVersion}}/user/api-key
+X-API-Key: {{$dotenv apiKey}}
+
+{"description": "My API Key for testing","is_active": true,"expired_at": "2025-08-27T15:04:05Z"}
+
+
+### 6. Get API Keys
+GET {{$dotenv baseUrl}}/{{$dotenv apiVersion}}/user/api-key
+Authorization: Bearer {{$dotenv jwtToken}}
+
+### 7. Test dengan Environment Variables
+POST {{$dotenv devBaseUrl}}/{{$dotenv apiVersion}}/auth/login
+Content-Type: application/json
+
+{
+    "username": "devuser",
+    "password": "devpass"
+}

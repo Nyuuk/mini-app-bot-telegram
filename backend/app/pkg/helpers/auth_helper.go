@@ -3,6 +3,7 @@ package helpers
 import (
 	"time"
 
+	"github.com/Nyuuk/mini-app-bot-telegram/backend/app/entities"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -24,8 +25,8 @@ func GetCurrentUserID(c *fiber.Ctx) uint {
 }
 
 // GetCurrentUser mendapatkan user object dari context
-func GetCurrentUser(c *fiber.Ctx) interface{} {
-	return c.Locals("user")
+func GetCurrentUser(c *fiber.Ctx) entities.User {
+	return c.Locals("user").(entities.User)
 }
 
 // GetAuthType mendapatkan tipe autentikasi yang digunakan

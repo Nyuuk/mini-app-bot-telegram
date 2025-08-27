@@ -7,17 +7,19 @@ import (
 	"github.com/Nyuuk/mini-app-bot-telegram/backend/app/entities"
 	"github.com/Nyuuk/mini-app-bot-telegram/backend/app/middlewares"
 	"github.com/Nyuuk/mini-app-bot-telegram/backend/app/pkg/database"
+	"github.com/Nyuuk/mini-app-bot-telegram/backend/app/pkg/helpers"
 	"github.com/gofiber/fiber/v2"
 	"github.com/joho/godotenv"
 )
 
 func main() {
 	log.Println("Initializing application...")
-
+	
 	if err := godotenv.Load(); err != nil {
 		log.Fatal("Error loading .env file")
 	}
-
+	helpers.InitLogger()
+	
 	log.Println("Connecting to database...")
 	if err := database.PGOpen(); err != nil {
 		log.Fatal("Error connecting to database")
@@ -36,6 +38,12 @@ func main() {
 	log.Println("Starting server...")
 	app := fiber.New()
 
+	// Apply logging middlewares
+	app.Use(middlewares.LoggingMiddleware())
+	app.Use(middlewares.DatabaseLoggingMiddleware())
+	app.Use(middlewares.PerformanceLoggingMiddleware())
+	app.Use(middlewares.SecurityLoggingMiddleware())
+
 	app.Get("/health", func(c *fiber.Ctx) error {
 		return c.JSON(fiber.Map{
 			"status": "ok",
@@ -44,6 +52,7 @@ func main() {
 
 	authController := controllers.AuthController{}
 	userController := controllers.UserController{}
+	telegramController := controllers.TelegramController{}
 
 	// Public routes (tidak perlu auth)
 	auth := app.Group("/v1/auth").Name("auth")
@@ -60,8 +69,12 @@ func main() {
 	user.Get("/", userController.GetAllUsers)                    // Get all users (admin only)
 	user.Get("/api-key", userController.GetApiKeyFromUserActive) // Get API key from user active
 	user.Post("/api-key", userController.CreateApiKey)           // Create API key baru
+	
 	user.Get("/:id", userController.GetUserById)                 // Get user by ID (admin only)
 	user.Delete("/:id", userController.DeleteUserById)           // Delete user by ID (admin only)
+
+	telegram := protected.Group("/telegram").Name("telegram")
+	telegram.Post("/", telegramController.CreateNewUserForNowUserActive) // Create new user for now user active
 
 	// API Key routes
 	// apikey := protected.Group("/apikey").Name("apikey")

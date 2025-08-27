@@ -9,7 +9,6 @@ import (
 	"github.com/Nyuuk/mini-app-bot-telegram/backend/app/pkg/helpers"
 	"github.com/Nyuuk/mini-app-bot-telegram/backend/app/repositories"
 	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/log"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
@@ -30,9 +29,14 @@ func (s *AuthService) Login(c *fiber.Ctx, tx *gorm.DB, payload *payloads.LoginPa
 	}
 
 	// generate jwt token
-	expireAt := time.Now().Add(time.Hour * 24)
+	expiredFromEnv := helpers.GetEnv("JWT_EXPIRATION", "1")
+	expiredFromInt, err := strconv.Atoi(expiredFromEnv)
+	if err != nil {
+		return helpers.ResponseErrorInternal(c, err)
+	}
+	expireAt := time.Now().Add(time.Hour * time.Duration(expiredFromInt))
 	userIdToString := strconv.Itoa(int(user.ID))
-	log.Info("userIdToString: ", userIdToString)
+	helpers.Logger.Info().Str("user_id", userIdToString).Msg("Generating JWT token")
 	token, err := helpers.GenerateJWT(userIdToString, expireAt.Unix())
 	if err != nil {
 		return helpers.ResponseErrorInternal(c, err)
@@ -45,23 +49,23 @@ func (s *AuthService) Login(c *fiber.Ctx, tx *gorm.DB, payload *payloads.LoginPa
 }
 
 func (s *AuthService) ValidateApiKey(apiKeyEntity *entities.APIKey, apiKey string, c *fiber.Ctx, tx *gorm.DB) bool {
-	log.Info("Validating API key: ", apiKey)
+	helpers.Logger.Info().Str("api_key", apiKeyEntity.APIKey).Msg("Validating API key")
 	if err := s.ApiKeyRepository.FindByApiKey(apiKey, apiKeyEntity, tx); err != nil {
-		log.Error("Error validating API key: ", err)
+		helpers.Logger.Error().Err(err).Str("api_key", apiKeyEntity.APIKey).Msg("Error validating API key")
 		return false
 	}
 
 	// if err := bcrypt.CompareHashAndPassword([]byte(apiKeyEntity.APIKey), []byte(apiKey)); err != nil {
-	// 	log.Error("Error comparing hash and password: ", err)
+	// 	helpers.Logger.Error().Err(err).Str("api_key", apiKeyEntity.APIKey).Msg("Error comparing hash and password")
 	// 	return false
 	// }
 
-	log.Info("API key validated successfully ", apiKeyEntity.User)
+	helpers.Logger.Info().Str("api_key", apiKeyEntity.APIKey).Str("user_id", strconv.Itoa(int(apiKeyEntity.UserID))).Msg("API key validated successfully")
 	return true
 }
 
 func (s *AuthService) GetUserByApiKey(c *fiber.Ctx, tx *gorm.DB) error {
-	log.Info("Getting user by API key")
+	helpers.Logger.Info().Msg("Getting user by API key")
 	apiKey := c.Get("X-API-Key")
 	var apiKeyEntity entities.APIKey
 	if !s.ValidateApiKey(&apiKeyEntity, apiKey, c, tx) {
