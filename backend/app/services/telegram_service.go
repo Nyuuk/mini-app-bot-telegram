@@ -50,3 +50,60 @@ func (t *TelegramService) CreateNewUserForNowUserActive(payload *payloads.Create
 	helpers.Logger.Info().Interface("telegramUser", telegramUser).Msg("TelegramService: CreateNewUserForNowUserActive Telegram user created successfully")
 	return helpers.Response(c, fiber.StatusCreated, "Telegram user created successfully", telegramUser)
 }
+
+func (t *TelegramService) DeleteByTelegramID(telegramID int64, c *fiber.Ctx, tx *gorm.DB) error {
+	helpers.MyLogger("debug", "TelegramAccountLink", "DeleteByTelegramId", "service", "start delete telegram user by telegram ID", nil, c)
+	var telegramUser entities.TelegramUser
+	// find telegram user by telegram ID
+	helpers.MyLogger("debug", "TelegramAccountLink", "DeleteByTelegramId", "service", "start calling repository for find telegram user by telegram ID", nil, c)
+	if err := t.TelegramRepository.FindByTelegramID(telegramID, &telegramUser, c, tx); err != nil {
+		if helpers.IsNotFoundError(err) {
+			helpers.MyLogger("info", "TelegramAccountLink", "DeleteByTelegramId", "service", "not found telegram user by telegram ID", nil, c)
+			tx.Rollback()
+			return helpers.Response(c, fiber.StatusNotFound, "Telegram user not found", nil)
+		}
+		helpers.MyLogger("error", "TelegramAccountLink", "DeleteByTelegramId", "service", "error find telegram user by telegram ID", map[string]interface{}{
+			"error": err.Error(),
+		}, c)
+		tx.Rollback()
+		return err
+	}
+	err := t.TelegramRepository.DeleteByTelegramID(telegramUser.TelegramID, c, tx)
+	if err != nil {
+		tx.Rollback()
+		helpers.MyLogger("error", "TelegramAccountLink", "DeleteByTelegramId", "service", "error delete telegram user by telegram ID", nil, c)
+		return err
+	}
+	if err := tx.Commit().Error; err != nil {
+		helpers.MyLogger("error", "TelegramAccountLink", "DeleteByTelegramId", "service", "error committing transaction", map[string]interface{}{
+			"error": err.Error(),
+		}, c)
+		tx.Rollback()
+		return err
+	}
+	helpers.MyLogger("info", "TelegramAccountLink", "DeleteByTelegramId", "service", "success delete telegram user by telegram ID", nil, c)
+	return helpers.Response(c, fiber.StatusOK, "Telegram user deleted successfully", nil)
+}
+
+// find by user id
+func (t *TelegramService) FindByUserID(userID uint, c *fiber.Ctx, tx *gorm.DB) error {
+	helpers.MyLogger("debug", "TelegramAccountLink", "FindByUserId", "service", "start find telegram user by user ID", nil, c)
+	var telegramUser entities.TelegramUser
+	if err := t.TelegramRepository.FindByUserID(userID, &telegramUser, c, tx); err != nil {
+		if helpers.IsNotFoundError(err) {
+			helpers.MyLogger("info", "TelegramAccountLink", "FindByUserId", "service", "not found telegram user by user ID", map[string]interface{}{
+				"user_id_throw": userID,
+			}, c)
+			// tx.Rollback()
+			return helpers.Response(c, fiber.StatusNotFound, "Telegram user not found", nil)
+		}
+		helpers.MyLogger("error", "TelegramAccountLink", "FindByUserId", "service", "error find telegram user by user ID", map[string]interface{}{
+			"error": err.Error(),
+		}, c)
+		return err
+	}
+	helpers.MyLogger("info", "TelegramAccountLink", "FindByUserId", "service", "success find telegram user by user ID", map[string]interface{}{
+		"telegram_user": telegramUser,
+	}, c)
+	return helpers.Response(c, fiber.StatusOK, "Telegram user found successfully", telegramUser)
+}

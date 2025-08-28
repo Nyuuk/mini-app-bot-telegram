@@ -365,6 +365,71 @@ func LogError(err error, event string, message string, details map[string]interf
 	logEvent.Msg(message)
 }
 
+type MyLoggerLevelLog string
+
+const (
+	MyLoggerLevelLogDebug MyLoggerLevelLog = "debug"
+	MyLoggerLevelLogInfo  MyLoggerLevelLog = "info"
+	MyLoggerLevelLogWarn  MyLoggerLevelLog = "warn"
+	MyLoggerLevelLogError MyLoggerLevelLog = "error"
+)
+
+func MyLogger(level MyLoggerLevelLog, business_event, event, event_on, message string, details map[string]interface{}, c *fiber.Ctx) {
+	// log format business_event=TelegramAccountLink event=DeleteByTelegramId event_on=repository message=Telegram user deleted successfully
+	user_id := GetCurrentUserID(c)
+
+	switch level {
+	case "debug":
+		l := Logger.With().CallerWithSkipFrameCount(3).Logger()
+		logEvent := l.Debug().
+			Str("business_event", business_event).
+			Str("event", event).
+			Str("event_on", event_on).
+			Uint("user_id", user_id)
+
+		for key, value := range details {
+			logEvent.Interface(key, SafeLogValue(value))
+		}
+		logEvent.Msg(message)
+	case "info":
+		l := Logger.With().CallerWithSkipFrameCount(3).Logger()
+		logEvent := l.Info().
+			Str("business_event", business_event).
+			Str("event", event).
+			Str("event_on", event_on).
+			Uint("user_id", user_id)
+
+		for key, value := range details {
+			logEvent.Interface(key, SafeLogValue(value))
+		}
+		logEvent.Msg(message)
+	case "warn":
+		l := Logger.With().CallerWithSkipFrameCount(3).Logger()
+		logEvent := l.Warn().
+			Str("business_event", business_event).
+			Str("event", event).
+			Str("event_on", event_on).
+			Uint("user_id", user_id)
+
+		for key, value := range details {
+			logEvent.Interface(key, SafeLogValue(value))
+		}
+		logEvent.Msg(message)
+	case "error":
+		l := Logger.With().CallerWithSkipFrameCount(3).Logger()
+		logEvent := l.Error().
+			Str("business_event", business_event).
+			Str("event", event).
+			Str("event_on", event_on).
+			Uint("user_id", user_id)
+
+		for key, value := range details {
+			logEvent.Interface(key, SafeLogValue(value))
+		}
+		logEvent.Msg(message)
+	}
+}
+
 // SafeLogValue converts values to safe logging format
 func SafeLogValue(value interface{}) interface{} {
 	if value == nil {

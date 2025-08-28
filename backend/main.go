@@ -75,6 +75,10 @@ func main() {
 
 	telegram := protected.Group("/telegram").Name("telegram")
 	telegram.Post("/", telegramController.CreateNewUserForNowUserActive) // Create new user for now user active
+	telegram.Get("/", telegramController.FindByUserID)              // Get all user telegram
+	// telegram.Get("/:id", telegramController.GetUserTelegramById)          // Get user telegram by ID
+	telegram.Delete("/:id", telegramController.DeleteByTelegramID)    // Delete user telegram by ID
+	// telegram.Put("/:id", telegramController.UpdateUserTelegramById)       // Update user telegram by ID
 
 	// API Key routes
 	// apikey := protected.Group("/apikey").Name("apikey")

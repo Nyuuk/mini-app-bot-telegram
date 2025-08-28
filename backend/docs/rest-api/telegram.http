@@ -2,6 +2,15 @@
 @baseUrl = {{$dotenv baseUrl}}
 @apiVersion = {{$dotenv apiVersion}}
 
+@apiKey = {{$dotenv apiKey}}
+
+
+### get user telegram by user ID
+GET {{baseUrl}}/{{apiVersion}}/telegram
+Content-Type: application/json
+X-API-Key: {{apiKey}}
+
+
 ### create new user telegram
 POST {{baseUrl}}/{{apiVersion}}/telegram
 Content-Type: application/json
@@ -18,3 +27,9 @@ X-API-Key: {{$dotenv apiKey}}
 GET {{baseUrl}}/{{apiVersion}}/telegram
 Content-Type: application/json
 X-API-Key: {{$dotenv apiKey}}
+
+
+### delete user telegram by telegram ID
+DELETE {{baseUrl}}/{{apiVersion}}/telegram/1234567891
+Content-Type: application/json
+X-API-Key: {{apiKey}}
