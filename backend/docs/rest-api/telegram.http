@@ -17,7 +17,7 @@ Content-Type: application/json
 X-API-Key: {{$dotenv apiKey}}
 
 {
-    "telegram_id": 1234567891,
+    "telegram_id": 1234567892,
     "username": "nyuuk",
     "first_name": "Nyuuk",
     "last_name": "Nyuuk"
@@ -33,3 +33,21 @@ X-API-Key: {{$dotenv apiKey}}
 DELETE {{baseUrl}}/{{apiVersion}}/telegram/1234567891
 Content-Type: application/json
 X-API-Key: {{apiKey}}
+
+
+### get user telegram by telegram ID
+GET {{baseUrl}}/{{apiVersion}}/telegram/1234567891
+Content-Type: application/json
+X-API-Key: {{apiKey}}
+
+
+### update user telegram by telegram ID
+PUT {{baseUrl}}/{{apiVersion}}/telegram/1234567891
+Content-Type: application/json
+X-API-Key: {{apiKey}}
+
+{
+    "username": "username123",
+    "first_name": "Hello123",
+    "last_name": "World123"
+}
