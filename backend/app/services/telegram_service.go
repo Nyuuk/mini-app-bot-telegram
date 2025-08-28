@@ -88,7 +88,7 @@ func (t *TelegramService) DeleteByTelegramID(telegramID int64, c *fiber.Ctx, tx 
 // find by user id
 func (t *TelegramService) FindByUserID(userID uint, c *fiber.Ctx, tx *gorm.DB) error {
 	helpers.MyLogger("debug", "TelegramAccountLink", "FindByUserId", "service", "start find telegram user by user ID", nil, c)
-	var telegramUser entities.TelegramUser
+	var telegramUser []entities.TelegramUser
 	if err := t.TelegramRepository.FindByUserID(userID, &telegramUser, c, tx); err != nil {
 		if helpers.IsNotFoundError(err) {
 			helpers.MyLogger("info", "TelegramAccountLink", "FindByUserId", "service", "not found telegram user by user ID", map[string]interface{}{
@@ -103,6 +103,27 @@ func (t *TelegramService) FindByUserID(userID uint, c *fiber.Ctx, tx *gorm.DB) e
 		return err
 	}
 	helpers.MyLogger("info", "TelegramAccountLink", "FindByUserId", "service", "success find telegram user by user ID", map[string]interface{}{
+		"telegram_user": telegramUser,
+	}, c)
+	return helpers.Response(c, fiber.StatusOK, "Telegram user found successfully", telegramUser)
+}
+
+func (t *TelegramService) FindByTelegramID(telegramID int64, c *fiber.Ctx, tx *gorm.DB) error {
+	helpers.MyLogger("debug", "TelegramAccountLink", "FindByTelegramId", "service", "start find telegram user by telegram ID", nil, c)
+	var telegramUser entities.TelegramUser
+	if err := t.TelegramRepository.FindByTelegramID(telegramID, &telegramUser, c, tx); err != nil {
+		if helpers.IsNotFoundError(err) {
+			helpers.MyLogger("info", "TelegramAccountLink", "FindByTelegramId", "service", "not found telegram user by telegram ID", map[string]interface{}{
+				"telegram_id_throw": telegramID,
+			}, c)
+			return helpers.Response(c, fiber.StatusNotFound, "Telegram user not found", nil)
+		}
+		helpers.MyLogger("error", "TelegramAccountLink", "FindByTelegramId", "service", "error find telegram user by telegram ID", map[string]interface{}{
+			"error": err.Error(),
+		}, c)
+		return err
+	}
+	helpers.MyLogger("info", "TelegramAccountLink", "FindByTelegramId", "service", "success find telegram user by telegram ID", map[string]interface{}{
 		"telegram_user": telegramUser,
 	}, c)
 	return helpers.Response(c, fiber.StatusOK, "Telegram user found successfully", telegramUser)

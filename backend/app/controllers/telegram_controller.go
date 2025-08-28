@@ -84,3 +84,26 @@ func (t *TelegramController) FindByUserID(c *fiber.Ctx) error {
 	}
 	return nil
 }
+
+func (t *TelegramController) FindByTelegramID(c *fiber.Ctx) error {
+	helpers.MyLogger("debug", "TelegramAccountLink", "FindByTelegramId", "controller", "start find telegram user by telegram ID", nil, c)
+	telegramID := c.Params("id")
+	telegramIDInt64, err := strconv.ParseInt(telegramID, 10, 64)
+	if err != nil {
+		helpers.MyLogger("error", "TelegramAccountLink", "FindByTelegramId", "controller", "error parse telegram ID", map[string]interface{}{
+			"error": err.Error(),
+		}, c)
+	}
+	tx := database.ClientPostgres
+
+	helpers.MyLogger("debug", "TelegramAccountLink", "FindByTelegramId", "controller", "start calling service for find telegram user by telegram ID", map[string]interface{}{
+		"telegram_id": telegramIDInt64,
+	}, c)
+	if err := t.TelegramService.FindByTelegramID(telegramIDInt64, c, tx); err != nil {
+		helpers.MyLogger("error", "TelegramAccountLink", "FindByTelegramId", "controller", "error find telegram user by telegram ID", map[string]interface{}{
+			"error": err.Error(),
+		}, c)
+		return helpers.ResponseErrorInternal(c, err)
+	}
+	return nil
+}

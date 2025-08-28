@@ -16,8 +16,9 @@ func (t *TelegramRepository) Create(payload *entities.TelegramUser, c *fiber.Ctx
 	return nil
 }
 
-func (t *TelegramRepository) FindByUserID(userID uint, telegramUser *entities.TelegramUser, c *fiber.Ctx, tx *gorm.DB) error {
-	err := tx.WithContext(c.Context()).Where("user_id = ?", userID).First(&telegramUser).Error
+func (t *TelegramRepository) FindByUserID(userID uint, telegramUser *[]entities.TelegramUser, c *fiber.Ctx, tx *gorm.DB) error {
+	// get all telegram user by user ID
+	err := tx.WithContext(c.Context()).Where("user_id = ?", userID).Find(&telegramUser).Error
 	if err != nil {
 		return err
 	}

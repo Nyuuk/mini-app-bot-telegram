@@ -14,12 +14,12 @@ import (
 
 func main() {
 	log.Println("Initializing application...")
-	
+
 	if err := godotenv.Load(); err != nil {
 		log.Fatal("Error loading .env file")
 	}
 	helpers.InitLogger()
-	
+
 	log.Println("Connecting to database...")
 	if err := database.PGOpen(); err != nil {
 		log.Fatal("Error connecting to database")
@@ -69,15 +69,15 @@ func main() {
 	user.Get("/", userController.GetAllUsers)                    // Get all users (admin only)
 	user.Get("/api-key", userController.GetApiKeyFromUserActive) // Get API key from user active
 	user.Post("/api-key", userController.CreateApiKey)           // Create API key baru
-	
-	user.Get("/:id", userController.GetUserById)                 // Get user by ID (admin only)
-	user.Delete("/:id", userController.DeleteUserById)           // Delete user by ID (admin only)
+
+	user.Get("/:id", userController.GetUserById)       // Get user by ID (admin only)
+	user.Delete("/:id", userController.DeleteUserById) // Delete user by ID (admin only)
 
 	telegram := protected.Group("/telegram").Name("telegram")
 	telegram.Post("/", telegramController.CreateNewUserForNowUserActive) // Create new user for now user active
-	telegram.Get("/", telegramController.FindByUserID)              // Get all user telegram
-	// telegram.Get("/:id", telegramController.GetUserTelegramById)          // Get user telegram by ID
-	telegram.Delete("/:id", telegramController.DeleteByTelegramID)    // Delete user telegram by ID
+	telegram.Get("/", telegramController.FindByUserID)                   // Get all user telegram
+	telegram.Get("/:id", telegramController.FindByTelegramID)            // Get user telegram by ID
+	telegram.Delete("/:id", telegramController.DeleteByTelegramID)       // Delete user telegram by ID
 	// telegram.Put("/:id", telegramController.UpdateUserTelegramById)       // Update user telegram by ID
 
 	// API Key routes
