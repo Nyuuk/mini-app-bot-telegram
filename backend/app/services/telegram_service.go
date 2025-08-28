@@ -128,3 +128,43 @@ func (t *TelegramService) FindByTelegramID(telegramID int64, c *fiber.Ctx, tx *g
 	}, c)
 	return helpers.Response(c, fiber.StatusOK, "Telegram user found successfully", telegramUser)
 }
+
+
+func (t *TelegramService) UpdateByTelegramID(telegramID int64, payload *payloads.UpdateTelegramPayload, c *fiber.Ctx, tx *gorm.DB) error {
+	helpers.MyLogger("debug", "TelegramAccountLink", "UpdateByTelegramId", "service", "start update telegram user by telegram ID", nil, c)
+	var telegramUser entities.TelegramUser
+	if err := t.TelegramRepository.FindByTelegramID(telegramID, &telegramUser, c, tx); err != nil {
+		if helpers.IsNotFoundError(err) {
+			helpers.MyLogger("info", "TelegramAccountLink", "UpdateByTelegramId", "service", "not found telegram user by telegram ID", map[string]interface{}{
+				"telegram_id_throw": telegramID,
+			}, c)
+			return helpers.Response(c, fiber.StatusNotFound, "Telegram user not found", nil)
+		}
+		helpers.MyLogger("error", "TelegramAccountLink", "UpdateByTelegramId", "service", "error find telegram user by telegram ID", map[string]interface{}{
+			"error": err.Error(),
+		}, c)
+		return err
+	}
+	telegramUser.Username = payload.Username
+	telegramUser.FirstName = payload.FirstName
+	telegramUser.LastName = payload.LastName
+	err := t.TelegramRepository.UpdateByTelegramID(telegramID, &telegramUser, c, tx)
+	if err != nil {
+		helpers.MyLogger("error", "TelegramAccountLink", "UpdateByTelegramId", "service", "error update telegram user by telegram ID", map[string]interface{}{
+			"error": err.Error(),
+		}, c)
+		tx.Rollback()
+		return err
+	}
+	if err := tx.Commit().Error; err != nil {
+		helpers.MyLogger("error", "TelegramAccountLink", "UpdateByTelegramId", "service", "error committing transaction", map[string]interface{}{
+			"error": err.Error(),
+		}, c)
+		tx.Rollback()
+		return err
+	}
+	helpers.MyLogger("info", "TelegramAccountLink", "UpdateByTelegramId", "service", "success update telegram user by telegram ID", map[string]interface{}{
+		"telegram_user": telegramUser,
+	}, c)
+	return helpers.Response(c, fiber.StatusOK, "Telegram user updated successfully", telegramUser)
+}

@@ -78,7 +78,7 @@ func main() {
 	telegram.Get("/", telegramController.FindByUserID)                   // Get all user telegram
 	telegram.Get("/:id", telegramController.FindByTelegramID)            // Get user telegram by ID
 	telegram.Delete("/:id", telegramController.DeleteByTelegramID)       // Delete user telegram by ID
-	// telegram.Put("/:id", telegramController.UpdateUserTelegramById)       // Update user telegram by ID
+	telegram.Put("/:id", telegramController.UpdateByTelegramID)          // Update user telegram by ID
 
 	// API Key routes
 	// apikey := protected.Group("/apikey").Name("apikey")

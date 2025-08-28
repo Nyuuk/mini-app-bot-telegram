@@ -107,3 +107,38 @@ func (t *TelegramController) FindByTelegramID(c *fiber.Ctx) error {
 	}
 	return nil
 }
+
+func (t *TelegramController) UpdateByTelegramID(c *fiber.Ctx) error {
+	helpers.MyLogger("debug", "TelegramAccountLink", "UpdateByTelegramId", "controller", "start update telegram user by telegram ID", nil, c)
+	telegramID := c.Params("id")
+	telegramIDInt64, err := strconv.ParseInt(telegramID, 10, 64)
+	if err != nil {
+		helpers.MyLogger("error", "TelegramAccountLink", "UpdateByTelegramId", "controller", "error parse telegram ID", map[string]interface{}{
+			"error": err.Error(),
+		}, c)
+		return helpers.ResponseErrorBadRequest(c, "Invalid telegram ID", nil)
+	}
+	var payload payloads.UpdateTelegramPayload
+	if err := helpers.ValidateBody(&payload, c); err != nil {
+		helpers.MyLogger("error", "TelegramAccountLink", "UpdateByTelegramId", "controller", "error validate body", map[string]interface{}{
+			"error": err.Error(),
+		}, c)
+		if customErr, ok := err.(helpers.Error); ok {
+			return helpers.ResponseErrorBadRequest(c, customErr.Message, customErr.Data)
+		}
+		return helpers.ResponseErrorBadRequest(c, "Invalid payload", nil)
+	}
+	tx := database.ClientPostgres.Begin()
+	defer tx.Rollback()
+
+	helpers.MyLogger("debug", "TelegramAccountLink", "UpdateByTelegramId", "controller", "start calling service for update telegram user by telegram ID", map[string]interface{}{
+		"telegram_id": telegramIDInt64,
+	}, c)
+	if err := t.TelegramService.UpdateByTelegramID(telegramIDInt64, &payload, c, tx); err != nil {
+		helpers.MyLogger("error", "TelegramAccountLink", "UpdateByTelegramId", "controller", "error update telegram user by telegram ID", map[string]interface{}{
+			"error": err.Error(),
+		}, c)
+		return helpers.ResponseErrorInternal(c, err)
+	}
+	return nil
+}
