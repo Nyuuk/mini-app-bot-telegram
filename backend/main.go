@@ -26,14 +26,14 @@ func main() {
 	}
 
 	// run auto migration
-	if err := database.ClientPostgres.AutoMigrate(
-		&entities.User{},
-		&entities.APIKey{},
-		&entities.TelegramUser{},
-		&entities.Overtime{},
-	); err != nil {
-		log.Fatal("Error migrating database: ", err)
-	}
+	// if err := database.ClientPostgres.AutoMigrate(
+	// 	&entities.User{},
+	// 	&entities.APIKey{},
+	// 	&entities.TelegramUser{},
+	// 	&entities.Overtime{},
+	// ); err != nil {
+	// 	log.Fatal("Error migrating database: ", err)
+	// }
 
 	log.Println("Starting server...")
 	app := fiber.New()
