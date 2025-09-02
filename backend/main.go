@@ -7,7 +7,6 @@ import (
 	"github.com/Nyuuk/mini-app-bot-telegram/backend/app/middlewares"
 	"github.com/Nyuuk/mini-app-bot-telegram/backend/app/pkg/database"
 	"github.com/Nyuuk/mini-app-bot-telegram/backend/app/pkg/helpers"
-	_ "github.com/Nyuuk/mini-app-bot-telegram/backend/docs"
 	"github.com/gofiber/fiber/v2"
 	"github.com/joho/godotenv"
 	fiberSwagger "github.com/swaggo/fiber-swagger"
