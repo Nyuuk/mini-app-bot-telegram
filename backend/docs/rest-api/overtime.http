@@ -49,7 +49,7 @@ X-API-Key: {{$dotenv apiKey}}
 Content-Type: application/json
 
 {
-  "telegram_id": 123456789,
+  "telegram_id": 1234567892,
   "start_date": "2025-01-14",
   "end_date": "2025-01-31"
 }
@@ -64,7 +64,7 @@ Authorization: {{token}}
 Content-Type: application/json
 
 {
-  "telegram_id": 123456789,
+  "telegram_id": 1234567892,
   "date": "2024-01-15",
   "time_start": "2024-01-15T08:00:00",
   "time_stop": "2024-01-15T17:00:00",

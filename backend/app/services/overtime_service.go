@@ -168,7 +168,7 @@ func (o *OvertimeService) GetRecordByDateByTelegramID(telegramID int64, date tim
 		"date":        date,
 	}, c)
 
-	var overtime entities.Overtime
+	var overtime []entities.Overtime
 	err := o.OvertimeRepository.GetRecordByDateByTelegramID(telegramID, date, &overtime, c, tx)
 	if err != nil {
 		if helpers.IsNotFoundError(err) {
@@ -187,7 +187,7 @@ func (o *OvertimeService) GetRecordByDateByTelegramID(telegramID int64, date tim
 	helpers.MyLogger("info", "OvertimeManagement", "GetRecordByDateByTelegramID", "service", "overtime record retrieved successfully", map[string]interface{}{
 		"telegram_id": telegramID,
 		"date":        date,
-		"overtime_id": overtime.ID,
+		"overtime": overtime,
 	}, c)
 	return helpers.Response(c, fiber.StatusOK, "Overtime record retrieved successfully", overtime)
 }
