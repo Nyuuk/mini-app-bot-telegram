@@ -1,0 +1,152 @@
+### Variables
+@baseUrl = http://127.0.0.1:3000
+@apiVersion = {{$dotenv apiVersion}}
+@token = Bearer {{$dotenv jwtToken}}
+@apikey = {{$dotenv apiKey}}
+
+
+### Health Check
+GET {{baseUrl}}/health
+
+
+### Create New Overtime Record
+POST {{baseUrl}}/{{apiVersion}}/overtime/
+# Authorization: {{token}}
+X-API-Key: {{$dotenv apiKey}}
+Content-Type: application/json
+
+{
+  "telegram_id": 1234567892,
+  "date": "2025-01-16",
+  "time_start": "09:00:00",
+  "time_stop": "18:00:00",
+  "break_duration": 1.0,
+  "duration": 8.0,
+  "description": "Working on project development",
+  "category": "Development"
+}
+
+### Get All Overtime Records by Telegram ID
+GET {{baseUrl}}/{{apiVersion}}/overtime/telegram/1234567892
+# Authorization: {{token}}
+X-API-Key: {{$dotenv apiKey}}
+
+### Get Overtime Record by Date
+POST {{baseUrl}}/{{apiVersion}}/overtime/by-date
+# Authorization: {{token}}
+X-API-Key: {{$dotenv apiKey}}
+Content-Type: application/json
+
+{
+  "telegram_id": 1234567892,
+  "date": "2025-01-16"
+}
+
+### Get Overtime Records Between Dates
+POST {{baseUrl}}/{{apiVersion}}/overtime/between-dates
+# Authorization: {{token}}
+X-API-Key: {{$dotenv apiKey}}
+Content-Type: application/json
+
+{
+  "telegram_id": 123456789,
+  "start_date": "2025-01-14",
+  "end_date": "2025-01-31"
+}
+
+### Get Overtime Record by ID
+GET {{baseUrl}}/overtime/1
+Authorization: {{token}}
+
+### Update Overtime Record
+PUT {{baseUrl}}/overtime/1
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "telegram_id": 123456789,
+  "date": "2024-01-15",
+  "time_start": "2024-01-15T08:00:00",
+  "time_stop": "2024-01-15T17:00:00",
+  "break_duration": 0.5,
+  "duration": 8.5,
+  "description": "Updated: Working on project development with extra hours",
+  "category": "Development"
+}
+
+### Delete Overtime Record
+DELETE {{baseUrl}}/overtime/1
+Authorization: {{token}}
+
+### Test Cases - Error Scenarios
+
+### Create Overtime Record - Invalid Data
+POST {{baseUrl}}/{{apiVersion}}/overtime
+# Authorization: {{token}}
+X-API-Key: {{$dotenv apiKey}}
+# Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "telegram_id": 0,
+  "date": "invalid-date",
+  "time_start": "invalid-time",
+  "time_stop": "invalid-time",
+  "break_duration": -1.0,
+  "duration": 0,
+  "description": "",
+  "category": ""
+}
+
+### Get Overtime Record by Date - Invalid Date Format
+POST {{baseUrl}}/overtime/by-date
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "telegram_id": 123456789,
+  "date": "2024/01/15"
+}
+
+### Get Overtime Records Between Dates - Invalid Date Range
+POST {{baseUrl}}/overtime/between-dates
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "telegram_id": 123456789,
+  "start_date": "2024-01-31",
+  "end_date": "2024-01-01"
+}
+
+### Get Overtime Record by Invalid ID
+GET {{baseUrl}}/overtime/999999
+Authorization: {{token}}
+
+### Update Non-existent Overtime Record
+PUT {{baseUrl}}/overtime/999999
+Authorization: {{token}}
+Content-Type: application/json
+
+{
+  "telegram_id": 123456789,
+  "date": "2024-01-15",
+  "time_start": "2024-01-15T09:00:00",
+  "time_stop": "2024-01-15T18:00:00",
+  "break_duration": 1.0,
+  "duration": 8.0,
+  "description": "Test update",
+  "category": "Test"
+}
+
+### Delete Non-existent Overtime Record
+DELETE {{baseUrl}}/overtime/999999
+Authorization: {{token}}
+
+### Unauthorized Access Test
+GET {{baseUrl}}/overtime/telegram/123456789
+# No Authorization header
+
+### Invalid API Key Test
+GET {{baseUrl}}/overtime/telegram/123456789
+Authorization: Bearer invalid_token_here

@@ -4,7 +4,6 @@ import (
 	"log"
 
 	"github.com/Nyuuk/mini-app-bot-telegram/backend/app/controllers"
-	"github.com/Nyuuk/mini-app-bot-telegram/backend/app/entities"
 	"github.com/Nyuuk/mini-app-bot-telegram/backend/app/middlewares"
 	"github.com/Nyuuk/mini-app-bot-telegram/backend/app/pkg/database"
 	"github.com/Nyuuk/mini-app-bot-telegram/backend/app/pkg/helpers"
@@ -53,6 +52,7 @@ func main() {
 	authController := controllers.AuthController{}
 	userController := controllers.UserController{}
 	telegramController := controllers.TelegramController{}
+	overtimeController := controllers.OvertimeController{}
 
 	// Public routes (tidak perlu auth)
 	auth := app.Group("/v1/auth").Name("auth")
@@ -79,6 +79,16 @@ func main() {
 	telegram.Get("/:id", telegramController.FindByTelegramID)            // Get user telegram by ID
 	telegram.Delete("/:id", telegramController.DeleteByTelegramID)       // Delete user telegram by ID
 	telegram.Put("/:id", telegramController.UpdateByTelegramID)          // Update user telegram by ID
+
+	// Overtime routes
+	overtime := protected.Group("/overtime").Name("overtime")
+	overtime.Post("/", overtimeController.CreateNewRecordOvertime)                              // Create new overtime record
+	overtime.Get("/telegram/:telegram_id", overtimeController.GetAllRecordOvertimeByTelegramID) // Get all overtime records by telegram ID
+	overtime.Post("/by-date", overtimeController.GetRecordByDateByTelegramID)                   // Get overtime record by specific date
+	overtime.Post("/between-dates", overtimeController.GetRecordBetweenDateByTelegramId)        // Get overtime records between dates
+	overtime.Get("/:id", overtimeController.GetRecordByID)                                      // Get overtime record by ID
+	overtime.Put("/:id", overtimeController.UpdateRecordOvertime)                               // Update overtime record
+	overtime.Delete("/:id", overtimeController.DeleteRecordOvertime)                            // Delete overtime record
 
 	// API Key routes
 	// apikey := protected.Group("/apikey").Name("apikey")
