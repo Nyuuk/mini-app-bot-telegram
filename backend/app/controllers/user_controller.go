@@ -12,6 +12,20 @@ type UserController struct {
 	UserService services.UserService
 }
 
+// GetUserById godoc
+// @Summary Get User by ID
+// @Description Get user information by user ID
+// @Tags Users
+// @Accept json
+// @Produce json
+// @Param id path int true "User ID"
+// @Success 200 {object} map[string]interface{} "User retrieved successfully"
+// @Failure 400 {object} map[string]interface{} "Invalid user ID"
+// @Failure 404 {object} map[string]interface{} "User not found"
+// @Failure 500 {object} map[string]interface{} "Internal server error"
+// @Security ApiKeyAuth
+// @Security BearerAuth
+// @Router /v1/user/{id} [get]
 func (u *UserController) GetUserById(c *fiber.Ctx) error {
 	tx := database.ClientPostgres
 	if err := u.UserService.GetUserById(c, tx); err != nil {
@@ -61,6 +75,17 @@ func (u *UserController) DeleteUserById(c *fiber.Ctx) error {
 	return nil
 }
 
+// CreateUser godoc
+// @Summary Create New User (Register)
+// @Description Create a new user account
+// @Tags Users
+// @Accept json
+// @Produce json
+// @Param createUserPayload body payloads.CreateUserPayload true "User registration data"
+// @Success 201 {object} map[string]interface{} "User created successfully"
+// @Failure 400 {object} map[string]interface{} "Invalid request body"
+// @Failure 500 {object} map[string]interface{} "Internal server error"
+// @Router /v1/auth/register [post]
 func (u *UserController) CreateUser(c *fiber.Ctx) error {
 	tx := database.ClientPostgres.Begin()
 	defer tx.Rollback()

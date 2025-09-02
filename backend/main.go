@@ -9,7 +9,33 @@ import (
 	"github.com/Nyuuk/mini-app-bot-telegram/backend/app/pkg/helpers"
 	"github.com/gofiber/fiber/v2"
 	"github.com/joho/godotenv"
+	fiberSwagger "github.com/swaggo/fiber-swagger"
 )
+
+// @title Mini App Bot Telegram API
+// @version 1.0
+// @description API for Mini App Bot Telegram Backend System
+// @termsOfService http://swagger.io/terms/
+
+// @contact.name API Support
+// @contact.url http://www.swagger.io/support
+// @contact.email support@swagger.io
+
+// @license.name MIT
+// @license.url https://opensource.org/licenses/MIT
+
+// @host localhost:3000
+// @BasePath /
+// @schemes http https
+
+// @securityDefinitions.apikey ApiKeyAuth
+// @in header
+// @name X-API-Key
+
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
+// @description Type "Bearer" followed by a space and JWT token.
 
 func main() {
 	log.Println("Initializing application...")
@@ -43,6 +69,17 @@ func main() {
 	app.Use(middlewares.PerformanceLoggingMiddleware())
 	app.Use(middlewares.SecurityLoggingMiddleware())
 
+	// Swagger UI route
+	app.Get("/swagger/*", fiberSwagger.WrapHandler)
+
+	// Health check endpoint
+	// @Summary Health Check
+	// @Description Check if the API is running
+	// @Tags Health
+	// @Accept json
+	// @Produce json
+	// @Success 200 {object} map[string]string
+	// @Router /health [get]
 	app.Get("/health", func(c *fiber.Ctx) error {
 		return c.JSON(fiber.Map{
 			"status": "ok",

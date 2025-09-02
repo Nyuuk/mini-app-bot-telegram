@@ -1,0 +1,283 @@
+basePath: /
+definitions:
+  payloads.CreateNewRecordOvertime:
+    properties:
+      break_duration:
+        minimum: 0
+        type: number
+      category:
+        maxLength: 255
+        minLength: 3
+        type: string
+      date:
+        description: 'Format: "2006-01-02" or "2006-01-02T15:04:05"'
+        type: string
+      description:
+        maxLength: 255
+        minLength: 3
+        type: string
+      duration:
+        type: number
+      telegram_id:
+        type: integer
+      time_start:
+        description: 'Format: "2006-01-02T15:04:05"'
+        type: string
+      time_stop:
+        description: 'Format: "2006-01-02T15:04:05"'
+        type: string
+    required:
+    - date
+    - duration
+    - telegram_id
+    - time_start
+    - time_stop
+    type: object
+  payloads.CreateUserPayload:
+    properties:
+      email:
+        type: string
+      password:
+        minLength: 8
+        type: string
+      username:
+        maxLength: 20
+        minLength: 3
+        type: string
+    required:
+    - email
+    - password
+    - username
+    type: object
+  payloads.GetRecordByDateRequest:
+    properties:
+      date:
+        example: "2024-01-15"
+        type: string
+      telegram_id:
+        type: integer
+    required:
+    - date
+    - telegram_id
+    type: object
+  payloads.LoginPayload:
+    properties:
+      password:
+        type: string
+      username:
+        type: string
+    required:
+    - password
+    - username
+    type: object
+host: localhost:3000
+info:
+  contact:
+    email: support@swagger.io
+    name: API Support
+    url: http://www.swagger.io/support
+  description: API for Mini App Bot Telegram Backend System
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  termsOfService: http://swagger.io/terms/
+  title: Mini App Bot Telegram API
+  version: "1.0"
+paths:
+  /v1/auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Login with username and password to get JWT token
+      parameters:
+      - description: Login credentials
+        in: body
+        name: loginPayload
+        required: true
+        schema:
+          $ref: '#/definitions/payloads.LoginPayload'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Login successful
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid request body
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: User Login
+      tags:
+      - Authentication
+  /v1/auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Create a new user account
+      parameters:
+      - description: User registration data
+        in: body
+        name: createUserPayload
+        required: true
+        schema:
+          $ref: '#/definitions/payloads.CreateUserPayload'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: User created successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid request body
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Create New User (Register)
+      tags:
+      - Users
+  /v1/overtime/:
+    post:
+      consumes:
+      - application/json
+      description: Create a new overtime record for a telegram user
+      parameters:
+      - description: Overtime record data
+        in: body
+        name: createOvertimePayload
+        required: true
+        schema:
+          $ref: '#/definitions/payloads.CreateNewRecordOvertime'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Overtime record created successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid request body
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Create New Overtime Record
+      tags:
+      - Overtime
+  /v1/overtime/by-date:
+    post:
+      consumes:
+      - application/json
+      description: Get overtime record for a specific date and telegram ID
+      parameters:
+      - description: Date and telegram ID
+        in: body
+        name: getRecordByDatePayload
+        required: true
+        schema:
+          $ref: '#/definitions/payloads.GetRecordByDateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Overtime record retrieved successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid request body
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Overtime record not found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Get Overtime Record by Date
+      tags:
+      - Overtime
+  /v1/user/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Get user information by user ID
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User retrieved successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid user ID
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: User not found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Get User by ID
+      tags:
+      - Users
+schemes:
+- http
+- https
+securityDefinitions:
+  ApiKeyAuth:
+    in: header
+    name: X-API-Key
+    type: apiKey
+  BearerAuth:
+    description: Type "Bearer" followed by a space and JWT token.
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
