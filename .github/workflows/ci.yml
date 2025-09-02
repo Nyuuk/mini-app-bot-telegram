@@ -1,0 +1,170 @@
+name: Continuous Integration
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  test-backend:
+    runs-on: ubuntu-latest
+    if: contains(github.event.head_commit.modified, 'backend/') || github.event_name == 'pull_request'
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: "1.21"
+
+      - name: Cache Go modules
+        uses: actions/cache@v3
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('backend/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      - name: Install dependencies
+        working-directory: ./backend
+        run: go mod download
+
+      - name: Verify dependencies
+        working-directory: ./backend
+        run: go mod verify
+
+      - name: Run go vet
+        working-directory: ./backend
+        run: go vet ./...
+
+      - name: Install staticcheck
+        run: go install honnef.co/go/tools/cmd/staticcheck@latest
+
+      - name: Run staticcheck
+        working-directory: ./backend
+        run: staticcheck ./...
+
+      - name: Run tests
+        working-directory: ./backend
+        env:
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable
+          JWT_SECRET_KEY: test_secret_key
+          LOG_LEVEL: error
+        run: go test -v -race -coverprofile=coverage.out ./...
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./backend/coverage.out
+          flags: backend
+
+  lint-backend:
+    runs-on: ubuntu-latest
+    if: contains(github.event.head_commit.modified, 'backend/') || github.event_name == 'pull_request'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: "1.21"
+
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v3
+        with:
+          version: latest
+          working-directory: backend
+
+  security-scan-backend:
+    runs-on: ubuntu-latest
+    if: contains(github.event.head_commit.modified, 'backend/') || github.event_name == 'pull_request'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: "1.21"
+
+      - name: Run Gosec Security Scanner
+        uses: securecodewarrior/github-action-gosec@master
+        with:
+          args: "-fmt sarif -out results.sarif ./backend/..."
+
+      - name: Upload SARIF file
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: results.sarif
+
+  build-test-backend:
+    runs-on: ubuntu-latest
+    if: contains(github.event.head_commit.modified, 'backend/') || github.event_name == 'pull_request'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Backend Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          push: false
+          tags: mini-app-bot-backend:test
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  test-frontend:
+    runs-on: ubuntu-latest
+    if: contains(github.event.head_commit.modified, 'frontend/') || github.event_name == 'pull_request'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ./frontend
+        run: npm ci
+
+      - name: Run linting
+        working-directory: ./frontend
+        run: npm run lint
+
+      - name: Run tests
+        working-directory: ./frontend
+        run: npm run test
+
+      - name: Build application
+        working-directory: ./frontend
+        run: npm run build

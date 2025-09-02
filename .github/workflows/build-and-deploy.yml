@@ -1,0 +1,179 @@
+name: Build and Deploy
+
+on:
+  push:
+    tags:
+      - "v*"
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      backend-changed: ${{ steps.changes.outputs.backend }}
+      frontend-changed: ${{ steps.changes.outputs.frontend }}
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get version from tag
+        id: version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/}
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "Version: ${VERSION}"
+
+      - name: Detect changes since last tag
+        id: changes
+        run: |
+          # Get the previous tag
+          PREVIOUS_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+
+          if [ -z "$PREVIOUS_TAG" ]; then
+            echo "No previous tag found, checking all files"
+            BACKEND_CHANGED="true"
+            FRONTEND_CHANGED="true"
+          else
+            echo "Comparing with previous tag: $PREVIOUS_TAG"
+            
+            # Check if backend files changed
+            if git diff --name-only $PREVIOUS_TAG HEAD | grep -E '^backend/' > /dev/null; then
+              BACKEND_CHANGED="true"
+            else
+              BACKEND_CHANGED="false"
+            fi
+            
+            # Check if frontend files changed
+            if git diff --name-only $PREVIOUS_TAG HEAD | grep -E '^frontend/' > /dev/null; then
+              FRONTEND_CHANGED="true"
+            else
+              FRONTEND_CHANGED="false"
+            fi
+          fi
+
+          echo "backend=${BACKEND_CHANGED}" >> $GITHUB_OUTPUT
+          echo "frontend=${FRONTEND_CHANGED}" >> $GITHUB_OUTPUT
+          echo "Backend changed: ${BACKEND_CHANGED}"
+          echo "Frontend changed: ${FRONTEND_CHANGED}"
+
+  build-backend:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.backend-changed == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata for Backend
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=tag,suffix=-backend
+            type=raw,value=${{ needs.detect-changes.outputs.version }}-backend
+
+      - name: Build and push Backend Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          platforms: linux/amd64,linux/arm64
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  build-frontend:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.frontend-changed == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata for Frontend
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=tag,suffix=-frontend
+            type=raw,value=${{ needs.detect-changes.outputs.version }}-frontend
+
+      - name: Build and push Frontend Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          file: ./frontend/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          platforms: linux/amd64,linux/arm64
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    needs: [detect-changes, build-backend, build-frontend]
+    if: always() && (needs.build-backend.result == 'success' || needs.build-frontend.result == 'success' || (needs.build-backend.result == 'skipped' && needs.build-frontend.result == 'skipped'))
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy notification
+        run: |
+          echo "Deployment started for version: ${{ needs.detect-changes.outputs.version }}"
+          echo "Backend changed: ${{ needs.detect-changes.outputs.backend-changed }}"
+          echo "Frontend changed: ${{ needs.detect-changes.outputs.frontend-changed }}"
+
+          if [ "${{ needs.detect-changes.outputs.backend-changed }}" == "true" ]; then
+            echo "✅ Backend image built: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.detect-changes.outputs.version }}-backend"
+          fi
+
+          if [ "${{ needs.detect-changes.outputs.frontend-changed }}" == "true" ]; then
+            echo "✅ Frontend image built: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.detect-changes.outputs.version }}-frontend"
+          fi
+
+      # Add your actual deployment steps here
+      # For example, deploy to your server using SSH, update Kubernetes manifests, etc.
+      # - name: Deploy to production
+      #   run: |
+      #     # Your deployment commands here

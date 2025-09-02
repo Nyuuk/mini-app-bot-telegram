@@ -14,7 +14,19 @@ type OvertimeController struct {
 	OvertimeService services.OvertimeService
 }
 
-// CreateNewRecordOvertime creates a new overtime record
+// CreateNewRecordOvertime godoc
+// @Summary Create New Overtime Record
+// @Description Create a new overtime record for a telegram user
+// @Tags Overtime
+// @Accept json
+// @Produce json
+// @Param createOvertimePayload body payloads.CreateNewRecordOvertime true "Overtime record data"
+// @Success 201 {object} map[string]interface{} "Overtime record created successfully"
+// @Failure 400 {object} map[string]interface{} "Invalid request body"
+// @Failure 500 {object} map[string]interface{} "Internal server error"
+// @Security ApiKeyAuth
+// @Security BearerAuth
+// @Router /v1/overtime/ [post]
 func (o *OvertimeController) CreateNewRecordOvertime(c *fiber.Ctx) error {
 	helpers.MyLogger("debug", "OvertimeManagement", "CreateNewRecordOvertime", "controller", "start create new overtime record", nil, c)
 
@@ -69,7 +81,20 @@ func (o *OvertimeController) GetAllRecordOvertimeByTelegramID(c *fiber.Ctx) erro
 	return nil
 }
 
-// GetRecordByDateByTelegramID retrieves overtime record by specific date and telegram ID
+// GetRecordByDateByTelegramID godoc
+// @Summary Get Overtime Record by Date
+// @Description Get overtime record for a specific date and telegram ID
+// @Tags Overtime
+// @Accept json
+// @Produce json
+// @Param getRecordByDatePayload body payloads.GetRecordByDateRequest true "Date and telegram ID"
+// @Success 200 {object} map[string]interface{} "Overtime record retrieved successfully"
+// @Failure 400 {object} map[string]interface{} "Invalid request body"
+// @Failure 404 {object} map[string]interface{} "Overtime record not found"
+// @Failure 500 {object} map[string]interface{} "Internal server error"
+// @Security ApiKeyAuth
+// @Security BearerAuth
+// @Router /v1/overtime/by-date [post]
 func (o *OvertimeController) GetRecordByDateByTelegramID(c *fiber.Ctx) error {
 	helpers.MyLogger("debug", "OvertimeManagement", "GetRecordByDateByTelegramID", "controller", "start get overtime record by date", nil, c)
 

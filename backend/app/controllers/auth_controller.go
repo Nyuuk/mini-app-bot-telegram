@@ -12,7 +12,17 @@ type AuthController struct {
 	AuthService services.AuthService
 }
 
-// Login untuk mendapatkan JWT token
+// Login godoc
+// @Summary User Login
+// @Description Login with username and password to get JWT token
+// @Tags Authentication
+// @Accept json
+// @Produce json
+// @Param loginPayload body payloads.LoginPayload true "Login credentials"
+// @Success 200 {object} map[string]interface{} "Login successful"
+// @Failure 400 {object} map[string]interface{} "Invalid request body"
+// @Failure 500 {object} map[string]interface{} "Internal server error"
+// @Router /v1/auth/login [post]
 func (a *AuthController) Login(c *fiber.Ctx) error {
 	// Log login attempt
 	helpers.LogAuth("login_attempt", "anonymous", false, map[string]interface{}{
