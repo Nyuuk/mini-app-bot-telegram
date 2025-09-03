@@ -85,7 +85,14 @@ Project sudah dilengkapi dengan:
 - `docker-compose.prod.yml` - Production environment
 - `backend/init.sql` - Database initialization script
 
-### 2. Development dengan Docker
+### 2. Architecture Support
+
+**Multi-Architecture Compatibility:**
+- **AMD64**: Supported (Intel/AMD processors)
+- **ARM64**: Supported (Apple M1/M2, ARM servers)
+- **Auto-detection**: Docker automatically builds for host architecture
+
+### 3. Development dengan Docker
 
 ```bash
 # Clone repository
@@ -105,7 +112,7 @@ docker-compose down
 docker-compose down -v
 ```
 
-### 3. Production Deployment
+### 4. Production Deployment
 
 ```bash
 # Set environment variables
@@ -123,7 +130,7 @@ docker-compose -f docker-compose.prod.yml logs -f
 docker-compose -f docker-compose.prod.yml down
 ```
 
-### 4. Environment Variables for Production
+### 5. Environment Variables for Production
 
 Buat file `.env.prod` untuk production:
 

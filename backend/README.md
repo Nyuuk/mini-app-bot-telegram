@@ -194,6 +194,9 @@ JWT_EXPIRATION=24
 
 ## 🐳 Docker Support
 
+### Multi-Architecture Support
+Project ini mendukung build untuk different architectures (ARM64 & AMD64):
+
 ```bash
 # Build image
 docker build -t mini-app-bot-telegram-backend .

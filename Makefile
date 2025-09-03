@@ -183,3 +183,10 @@ check-deps: ## Check for outdated dependencies
 update-deps: ## Update dependencies
 	@echo "Updating dependencies..."
 	cd $(BACKEND_DIR) && go get -u ./... && go mod tidy
+
+check-arch: ## Check system architecture
+	@echo "System Information:"
+	@echo "Architecture: $(shell uname -m)"
+	@echo "Platform: $(shell uname -s)"
+	@echo "Docker version: $(shell docker --version 2>/dev/null || echo 'Docker not installed')"
+	@echo "Docker Compose version: $(shell docker-compose --version 2>/dev/null || echo 'Docker Compose not installed')"
