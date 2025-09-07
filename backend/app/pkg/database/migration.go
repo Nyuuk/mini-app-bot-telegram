@@ -21,6 +21,7 @@ func RunMigration() {
 		&entities.APIKey{},
 		&entities.TelegramUser{},
 		&entities.Overtime{},
+		&entities.LogRequest{},
 	)
 	if err != nil {
 		log.Fatal("Error migrating database: ", err)

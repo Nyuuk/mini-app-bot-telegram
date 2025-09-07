@@ -146,3 +146,15 @@ func ConvertToTimezone(t time.Time) time.Time {
 	loc := GetTimezone()
 	return t.In(loc)
 }
+
+
+func GetLogRequestId(c *fiber.Ctx) uint {
+	return c.Locals("log_request_id").(uint)
+}
+
+// Remove this function or move it to a package that does not cause an import cycle.
+// If you need this functionality, implement it in the repositories package or another appropriate location.
+// func UpdateLogRequestEventByID(event string, c *fiber.Ctx, repositories *repositories.LogRequestRepository) error {
+// 	logRequestID := GetLogRequestId(c)
+// 	return repositories.UpdateLogRequestEventByID(logRequestID, event)
+// }

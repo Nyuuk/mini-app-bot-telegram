@@ -68,6 +68,8 @@ func main() {
 	app.Use(middlewares.DatabaseLoggingMiddleware())
 	app.Use(middlewares.PerformanceLoggingMiddleware())
 	app.Use(middlewares.SecurityLoggingMiddleware())
+	// Log all requests to LogRequest entity
+	app.Use(middlewares.RequestLogMiddleware())
 
 	// Swagger UI route
 	app.Get("/swagger/*", fiberSwagger.WrapHandler)
