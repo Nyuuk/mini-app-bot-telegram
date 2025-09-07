@@ -31,6 +31,9 @@ func (o *OvertimeService) CreateNewRecordOvertime(payload *payloads.CreateNewRec
 	}, c)
 
 	// Get telegram_user_id from telegram_id
+	helpers.MyLogger("debug", "OvertimeManagement", "CreateNewRecordOvertime", "service", "get telegram user id | calling repository Overtime GetTelegramUserIDByTelegramID", map[string]interface{}{
+		"telegram_id": payload.TelegramID,
+	}, c)
 	telegramUserID, err := o.OvertimeRepository.GetTelegramUserIDByTelegramID(payload.TelegramID, c, tx)
 	if err != nil {
 		if helpers.IsNotFoundError(err) {
@@ -48,6 +51,12 @@ func (o *OvertimeService) CreateNewRecordOvertime(payload *payloads.CreateNewRec
 	}
 
 	// Parse datetime strings with Asia/Jakarta timezone
+	helpers.MyLogger("debug", "OvertimeManagement", "CreateNewRecordOvertime", "service", "parsing date and time with timezone Asia/Jakarta | calling helpers.ParseDateWithTimezone", map[string]interface{}{
+		"date":        payload.Date,
+		"time_start":  payload.TimeStart,
+		"time_stop":   payload.TimeStop,
+		"telegram_id": payload.TelegramID,
+	}, c)
 	date, err := helpers.ParseDateWithTimezone(payload.Date)
 	if err != nil {
 		helpers.MyLogger("error", "OvertimeManagement", "CreateNewRecordOvertime", "service", "error parsing date", map[string]interface{}{
@@ -57,12 +66,21 @@ func (o *OvertimeService) CreateNewRecordOvertime(payload *payloads.CreateNewRec
 		tx.Rollback()
 		return helpers.Response(c, fiber.StatusBadRequest, "Invalid date format. Use YYYY-MM-DD", nil)
 	}
+	helpers.MyLogger("debug", "OvertimeManagement", "CreateNewRecordOvertime", "service", "successfully parsed date", map[string]interface{}{
+		"date": date,
+	}, c)
 
 	// Parse time_start - use appropriate parser based on format
 	var timeStart time.Time
 	if helpers.IsTimeOnlyFormat(payload.TimeStart) {
+		helpers.MyLogger("debug", "OvertimeManagement", "CreateNewRecordOvertime", "service", "calling helpers.ParseTimeWithTimezone", map[string]interface{}{
+			"time_start": payload.TimeStart,
+		}, c)
 		timeStart, err = helpers.ParseTimeWithTimezone(payload.TimeStart)
 	} else {
+		helpers.MyLogger("debug", "OvertimeManagement", "CreateNewRecordOvertime", "service", "calling helpers.ParseDateTimeWithTimezone", map[string]interface{}{
+			"time_start": payload.TimeStart,
+		}, c)
 		timeStart, err = helpers.ParseDateTimeWithTimezone(payload.TimeStart)
 	}
 	if err != nil {
@@ -73,12 +91,21 @@ func (o *OvertimeService) CreateNewRecordOvertime(payload *payloads.CreateNewRec
 		tx.Rollback()
 		return helpers.Response(c, fiber.StatusBadRequest, "Invalid time start format. Use YYYY-MM-DDTHH:MM:SS or HH:MM:SS", nil)
 	}
+	helpers.MyLogger("debug", "OvertimeManagement", "CreateNewRecordOvertime", "service", "successfully parsed time start", map[string]interface{}{
+		"time_start": timeStart,
+	}, c)
 
 	// Parse time_stop - use appropriate parser based on format
 	var timeStop time.Time
 	if helpers.IsTimeOnlyFormat(payload.TimeStop) {
+		helpers.MyLogger("debug", "OvertimeManagement", "CreateNewRecordOvertime", "service", "calling helpers.ParseTimeWithTimezone", map[string]interface{}{
+			"time_stop": payload.TimeStop,
+		}, c)
 		timeStop, err = helpers.ParseTimeWithTimezone(payload.TimeStop)
 	} else {
+		helpers.MyLogger("debug", "OvertimeManagement", "CreateNewRecordOvertime", "service", "calling helpers.ParseDateTimeWithTimezone", map[string]interface{}{
+			"time_stop": payload.TimeStop,
+		}, c)
 		timeStop, err = helpers.ParseDateTimeWithTimezone(payload.TimeStop)
 	}
 	if err != nil {
@@ -89,6 +116,9 @@ func (o *OvertimeService) CreateNewRecordOvertime(payload *payloads.CreateNewRec
 		tx.Rollback()
 		return helpers.Response(c, fiber.StatusBadRequest, "Invalid time stop format. Use YYYY-MM-DDTHH:MM:SS or HH:MM:SS", nil)
 	}
+	helpers.MyLogger("debug", "OvertimeManagement", "CreateNewRecordOvertime", "service", "successfully parsed time stop", map[string]interface{}{
+		"time_stop": timeStop,
+	}, c)
 
 	var overtime entities.Overtime
 	overtime.TelegramUserID = telegramUserID
