@@ -125,8 +125,10 @@ func main() {
 	overtime.Get("/telegram/:telegram_id", overtimeController.GetAllRecordOvertimeByTelegramID) // Get all overtime records by telegram ID
 	overtime.Post("/by-date", overtimeController.GetRecordByDateByTelegramID)                   // Get overtime record by specific date
 	overtime.Post("/between-dates", overtimeController.GetRecordBetweenDateByTelegramId)        // Get overtime records between dates
+	overtime.Put("/", overtimeController.UpdateRecordOvertime)                                  // Update overtime record
 	overtime.Get("/:id", overtimeController.GetRecordByID)                                      // Get overtime record by ID
 	overtime.Put("/:id", overtimeController.UpdateRecordOvertime)                               // Update overtime record
+	overtime.Delete("/", overtimeController.DeleteRecordOvertime)                               // Delete overtime record (flexible ID)
 	overtime.Delete("/:id", overtimeController.DeleteRecordOvertime)                            // Delete overtime record
 
 	// API Key routes

@@ -107,6 +107,18 @@ func (o *OvertimeRepository) UpdateRecordOvertime(id uint, payload *entities.Ove
 	return nil
 }
 
+// UpdateRecordOvertimePartial updates only specified fields of an overtime record
+func (o *OvertimeRepository) UpdateRecordOvertimePartial(id uint, updates map[string]interface{}, c *fiber.Ctx, tx *gorm.DB) error {
+	err := tx.WithContext(c.Context()).
+		Model(&entities.Overtime{}).
+		Where("id = ?", id).
+		Updates(updates).Error
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // DeleteRecordOvertime deletes an overtime record
 func (o *OvertimeRepository) DeleteRecordOvertime(id uint, c *fiber.Ctx, tx *gorm.DB) error {
 	err := tx.WithContext(c.Context()).

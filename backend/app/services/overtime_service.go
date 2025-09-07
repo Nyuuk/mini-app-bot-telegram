@@ -5,6 +5,7 @@ import (
 
 	"github.com/Nyuuk/mini-app-bot-telegram/backend/app/entities"
 	"github.com/Nyuuk/mini-app-bot-telegram/backend/app/payloads"
+	"github.com/Nyuuk/mini-app-bot-telegram/backend/app/pkg/database"
 	"github.com/Nyuuk/mini-app-bot-telegram/backend/app/pkg/helpers"
 	"github.com/Nyuuk/mini-app-bot-telegram/backend/app/repositories"
 	"github.com/gofiber/fiber/v2"
@@ -217,7 +218,7 @@ func (o *OvertimeService) GetRecordByDateByTelegramID(telegramID int64, date tim
 	helpers.MyLogger("info", "OvertimeManagement", "GetRecordByDateByTelegramID", "service", "overtime record retrieved successfully", map[string]interface{}{
 		"telegram_id": telegramID,
 		"date":        date,
-		"overtime": overtime,
+		"overtime":    overtime,
 	}, c)
 	return helpers.Response(c, fiber.StatusOK, "Overtime record retrieved successfully", overtime)
 }
@@ -302,14 +303,25 @@ func (o *OvertimeService) GetRecordByID(id uint, c *fiber.Ctx, tx *gorm.DB) erro
 }
 
 // UpdateRecordOvertime updates an existing overtime record
-func (o *OvertimeService) UpdateRecordOvertime(id uint, payload *payloads.CreateNewRecordOvertime, c *fiber.Ctx, tx *gorm.DB) error {
+func (o *OvertimeService) UpdateRecordOvertime(id uint, payload *payloads.UpdateRecordOvertime, c *fiber.Ctx, tx *gorm.DB) error {
 	userID := helpers.GetCurrentUserID(c)
 	helpers.MyLogger("debug", "OvertimeManagement", "UpdateRecordOvertime", "service", "start update overtime record", map[string]interface{}{
-		"overtime_id": id,
-		"user_id":     userID,
+		"user_id":        userID,
+		"overtime_id":    id,
+		"telegram_id":    payload.TelegramID,
+		"date":           payload.Date,
+		"time_start":     payload.TimeStart,
+		"time_stop":      payload.TimeStop,
+		"duration":       payload.Duration,
+		"break_duration": payload.BreakDuration,
+		"description":    payload.Description,
+		"category":       payload.Category,
 	}, c)
 
 	// Check if record exists
+	helpers.MyLogger("debug", "OvertimeManagement", "UpdateRecordOvertime", "service", "check if record exists | calling repository GetRecordByID", map[string]interface{}{
+		"overtime_id": id,
+	}, c)
 	var existingOvertime entities.Overtime
 	err := o.OvertimeRepository.GetRecordByID(id, &existingOvertime, c, tx)
 	if err != nil {
@@ -325,78 +337,160 @@ func (o *OvertimeService) UpdateRecordOvertime(id uint, payload *payloads.Create
 		return err
 	}
 
-	// Get telegram_user_id from telegram_id
-	telegramUserID, err := o.OvertimeRepository.GetTelegramUserIDByTelegramID(payload.TelegramID, c, tx)
-	if err != nil {
-		if helpers.IsNotFoundError(err) {
-			helpers.MyLogger("info", "OvertimeManagement", "UpdateRecordOvertime", "service", "telegram user not found", map[string]interface{}{
-				"telegram_id": payload.TelegramID,
+	// Prepare update data - only update fields that are provided
+	updates := make(map[string]interface{})
+
+	// Handle TelegramID update
+	if payload.TelegramID != 0 {
+		helpers.MyLogger("debug", "OvertimeManagement", "UpdateRecordOvertime", "service", "get telegram user id | calling repository GetTelegramUserIDByTelegramID", map[string]interface{}{
+			"telegram_id": payload.TelegramID,
+		}, c)
+		telegramUserID, err := o.OvertimeRepository.GetTelegramUserIDByTelegramID(payload.TelegramID, c, tx)
+		if err != nil {
+			if helpers.IsNotFoundError(err) {
+				helpers.MyLogger("info", "OvertimeManagement", "UpdateRecordOvertime", "service", "telegram user not found", map[string]interface{}{
+					"telegram_id": payload.TelegramID,
+				}, c)
+				tx.Rollback()
+				return helpers.Response(c, fiber.StatusNotFound, "Telegram user not found", nil)
+			}
+			helpers.MyLogger("error", "OvertimeManagement", "UpdateRecordOvertime", "service", "error finding telegram user", map[string]interface{}{
+				"error": err.Error(),
 			}, c)
 			tx.Rollback()
-			return helpers.Response(c, fiber.StatusNotFound, "Telegram user not found", nil)
+			return err
 		}
-		helpers.MyLogger("error", "OvertimeManagement", "UpdateRecordOvertime", "service", "error finding telegram user", map[string]interface{}{
-			"error": err.Error(),
+		updates["telegram_user_id"] = telegramUserID
+		helpers.MyLogger("debug", "OvertimeManagement", "UpdateRecordOvertime", "service", "telegram_user_id will be updated", map[string]interface{}{
+			"telegram_user_id": telegramUserID,
+		}, c)
+	}
+
+	// Handle Date update
+	if payload.Date != "" {
+		helpers.MyLogger("debug", "OvertimeManagement", "UpdateRecordOvertime", "service", "parsing date with timezone Asia/Jakarta | calling helpers.ParseDateWithTimezone", map[string]interface{}{
+			"date": payload.Date,
+		}, c)
+		date, err := helpers.ParseDateWithTimezone(payload.Date)
+		if err != nil {
+			helpers.MyLogger("error", "OvertimeManagement", "UpdateRecordOvertime", "service", "error parsing date", map[string]interface{}{
+				"error": err.Error(),
+				"date":  payload.Date,
+			}, c)
+			tx.Rollback()
+			return helpers.Response(c, fiber.StatusBadRequest, "Invalid date format. Use YYYY-MM-DD", nil)
+		}
+		updates["date"] = date
+		helpers.MyLogger("debug", "OvertimeManagement", "UpdateRecordOvertime", "service", "date will be updated", map[string]interface{}{
+			"date": date,
+		}, c)
+	}
+
+	// Handle TimeStart update
+	if payload.TimeStart != "" {
+		var timeStart time.Time
+		if helpers.IsTimeOnlyFormat(payload.TimeStart) {
+			helpers.MyLogger("debug", "OvertimeManagement", "UpdateRecordOvertime", "service", "calling helpers.ParseTimeWithTimezone", map[string]interface{}{
+				"time_start": payload.TimeStart,
+			}, c)
+			timeStart, err = helpers.ParseTimeWithTimezone(payload.TimeStart)
+		} else {
+			helpers.MyLogger("debug", "OvertimeManagement", "UpdateRecordOvertime", "service", "calling helpers.ParseDateTimeWithTimezone", map[string]interface{}{
+				"time_start": payload.TimeStart,
+			}, c)
+			timeStart, err = helpers.ParseDateTimeWithTimezone(payload.TimeStart)
+		}
+		if err != nil {
+			helpers.MyLogger("error", "OvertimeManagement", "UpdateRecordOvertime", "service", "error parsing time start", map[string]interface{}{
+				"error":      err.Error(),
+				"time_start": payload.TimeStart,
+			}, c)
+			tx.Rollback()
+			return helpers.Response(c, fiber.StatusBadRequest, "Invalid time start format. Use YYYY-MM-DDTHH:MM:SS or HH:MM:SS", nil)
+		}
+		updates["time_start"] = timeStart
+		helpers.MyLogger("debug", "OvertimeManagement", "UpdateRecordOvertime", "service", "time_start will be updated", map[string]interface{}{
+			"time_start": timeStart,
+		}, c)
+	}
+
+	// Handle TimeStop update
+	if payload.TimeStop != "" {
+		var timeStop time.Time
+		if helpers.IsTimeOnlyFormat(payload.TimeStop) {
+			helpers.MyLogger("debug", "OvertimeManagement", "UpdateRecordOvertime", "service", "calling helpers.ParseTimeWithTimezone", map[string]interface{}{
+				"time_stop": payload.TimeStop,
+			}, c)
+			timeStop, err = helpers.ParseTimeWithTimezone(payload.TimeStop)
+		} else {
+			helpers.MyLogger("debug", "OvertimeManagement", "UpdateRecordOvertime", "service", "calling helpers.ParseDateTimeWithTimezone", map[string]interface{}{
+				"time_stop": payload.TimeStop,
+			}, c)
+			timeStop, err = helpers.ParseDateTimeWithTimezone(payload.TimeStop)
+		}
+		if err != nil {
+			helpers.MyLogger("error", "OvertimeManagement", "UpdateRecordOvertime", "service", "error parsing time stop", map[string]interface{}{
+				"error":     err.Error(),
+				"time_stop": payload.TimeStop,
+			}, c)
+			tx.Rollback()
+			return helpers.Response(c, fiber.StatusBadRequest, "Invalid time stop format. Use YYYY-MM-DDTHH:MM:SS or HH:MM:SS", nil)
+		}
+		updates["time_stop"] = timeStop
+		helpers.MyLogger("debug", "OvertimeManagement", "UpdateRecordOvertime", "service", "time_stop will be updated", map[string]interface{}{
+			"time_stop": timeStop,
+		}, c)
+	}
+
+	// Handle Description update
+	if payload.Description != "" {
+		updates["description"] = payload.Description
+		helpers.MyLogger("debug", "OvertimeManagement", "UpdateRecordOvertime", "service", "description will be updated", map[string]interface{}{
+			"description": payload.Description,
+		}, c)
+	}
+
+	// Handle Category update
+	if payload.Category != "" {
+		updates["category"] = payload.Category
+		helpers.MyLogger("debug", "OvertimeManagement", "UpdateRecordOvertime", "service", "category will be updated", map[string]interface{}{
+			"category": payload.Category,
+		}, c)
+	}
+
+	// Handle Duration update
+	if payload.Duration > 0 {
+		updates["duration"] = payload.Duration
+		helpers.MyLogger("debug", "OvertimeManagement", "UpdateRecordOvertime", "service", "duration will be updated", map[string]interface{}{
+			"duration": payload.Duration,
+		}, c)
+	}
+
+	// Handle BreakDuration update
+	if payload.BreakDuration >= 0 {
+		updates["break_duration"] = payload.BreakDuration
+		helpers.MyLogger("debug", "OvertimeManagement", "UpdateRecordOvertime", "service", "break_duration will be updated", map[string]interface{}{
+			"break_duration": payload.BreakDuration,
+		}, c)
+	}
+
+	// Check if any fields are being updated
+	if len(updates) == 0 {
+		helpers.MyLogger("info", "OvertimeManagement", "UpdateRecordOvertime", "service", "no fields to update", map[string]interface{}{
+			"overtime_id": id,
 		}, c)
 		tx.Rollback()
-		return err
+		return helpers.Response(c, fiber.StatusBadRequest, "No fields to update", nil)
 	}
 
-	// Parse datetime strings with Asia/Jakarta timezone
-	date, err := helpers.ParseDateWithTimezone(payload.Date)
-	if err != nil {
-		helpers.MyLogger("error", "OvertimeManagement", "UpdateRecordOvertime", "service", "error parsing date", map[string]interface{}{
-			"error": err.Error(),
-			"date":  payload.Date,
-		}, c)
-		tx.Rollback()
-		return helpers.Response(c, fiber.StatusBadRequest, "Invalid date format. Use YYYY-MM-DD", nil)
-	}
+	helpers.MyLogger("debug", "OvertimeManagement", "UpdateRecordOvertime", "service", "fields to be updated", map[string]interface{}{
+		"updates": updates,
+	}, c)
 
-	// Parse time_start - use appropriate parser based on format
-	var timeStart time.Time
-	if helpers.IsTimeOnlyFormat(payload.TimeStart) {
-		timeStart, err = helpers.ParseTimeWithTimezone(payload.TimeStart)
-	} else {
-		timeStart, err = helpers.ParseDateTimeWithTimezone(payload.TimeStart)
-	}
-	if err != nil {
-		helpers.MyLogger("error", "OvertimeManagement", "UpdateRecordOvertime", "service", "error parsing time start", map[string]interface{}{
-			"error":      err.Error(),
-			"time_start": payload.TimeStart,
-		}, c)
-		tx.Rollback()
-		return helpers.Response(c, fiber.StatusBadRequest, "Invalid time start format. Use YYYY-MM-DDTHH:MM:SS or HH:MM:SS", nil)
-	}
-
-	// Parse time_stop - use appropriate parser based on format
-	var timeStop time.Time
-	if helpers.IsTimeOnlyFormat(payload.TimeStop) {
-		timeStop, err = helpers.ParseTimeWithTimezone(payload.TimeStop)
-	} else {
-		timeStop, err = helpers.ParseDateTimeWithTimezone(payload.TimeStop)
-	}
-	if err != nil {
-		helpers.MyLogger("error", "OvertimeManagement", "UpdateRecordOvertime", "service", "error parsing time stop", map[string]interface{}{
-			"error":     err.Error(),
-			"time_stop": payload.TimeStop,
-		}, c)
-		tx.Rollback()
-		return helpers.Response(c, fiber.StatusBadRequest, "Invalid time stop format. Use YYYY-MM-DDTHH:MM:SS or HH:MM:SS", nil)
-	}
-
-	// Update fields
-	var updatedOvertime entities.Overtime
-	updatedOvertime.TelegramUserID = telegramUserID
-	updatedOvertime.Date = date
-	updatedOvertime.TimeStart = timeStart
-	updatedOvertime.TimeStop = timeStop
-	updatedOvertime.BreakDuration = payload.BreakDuration
-	updatedOvertime.Duration = payload.Duration
-	updatedOvertime.Description = payload.Description
-	updatedOvertime.Category = payload.Category
-
-	err = o.OvertimeRepository.UpdateRecordOvertime(id, &updatedOvertime, c, tx)
+	helpers.MyLogger("debug", "OvertimeManagement", "UpdateRecordOvertime", "service", "calling repository to update overtime record", map[string]interface{}{
+		"overtime_id": id,
+	}, c)
+	err = o.OvertimeRepository.UpdateRecordOvertimePartial(id, updates, c, tx)
 	if err != nil {
 		helpers.MyLogger("error", "OvertimeManagement", "UpdateRecordOvertime", "service", "error updating overtime record", map[string]interface{}{
 			"error": err.Error(),
@@ -413,10 +507,24 @@ func (o *OvertimeService) UpdateRecordOvertime(id uint, payload *payloads.Create
 		return err
 	}
 
-	helpers.MyLogger("info", "OvertimeManagement", "UpdateRecordOvertime", "service", "overtime record updated successfully", map[string]interface{}{
+	// Get updated record to return to client
+	helpers.MyLogger("debug", "OvertimeManagement", "UpdateRecordOvertime", "service", "get updated record | calling repository GetRecordByID", map[string]interface{}{
 		"overtime_id": id,
 	}, c)
-	return helpers.Response(c, fiber.StatusOK, "Overtime record updated successfully", updatedOvertime)
+	var updatedRecord entities.Overtime
+	err = o.OvertimeRepository.GetRecordByID(id, &updatedRecord, c, database.ClientPostgres)
+	if err != nil {
+		helpers.MyLogger("error", "OvertimeManagement", "UpdateRecordOvertime", "service", "error getting updated record", map[string]interface{}{
+			"error": err.Error(),
+		}, c)
+		return helpers.Response(c, fiber.StatusInternalServerError, "Record updated but failed to retrieve updated data", nil)
+	}
+
+	helpers.MyLogger("info", "OvertimeManagement", "UpdateRecordOvertime", "service", "overtime record updated successfully", map[string]interface{}{
+		"overtime_id":    id,
+		"updated_fields": len(updates),
+	}, c)
+	return helpers.Response(c, fiber.StatusOK, "Overtime record updated successfully", updatedRecord)
 }
 
 // DeleteRecordOvertime deletes an overtime record
@@ -428,6 +536,9 @@ func (o *OvertimeService) DeleteRecordOvertime(id uint, c *fiber.Ctx, tx *gorm.D
 	}, c)
 
 	// Check if record exists
+	helpers.MyLogger("debug", "OvertimeManagement", "DeleteRecordOvertime", "service", "check if record exists | calling repository GetRecordByID", map[string]interface{}{
+		"overtime_id": id,
+	}, c)
 	var overtime entities.Overtime
 	err := o.OvertimeRepository.GetRecordByID(id, &overtime, c, tx)
 	if err != nil {
@@ -443,6 +554,15 @@ func (o *OvertimeService) DeleteRecordOvertime(id uint, c *fiber.Ctx, tx *gorm.D
 		return err
 	}
 
+	helpers.MyLogger("debug", "OvertimeManagement", "DeleteRecordOvertime", "service", "record found, proceeding with deletion", map[string]interface{}{
+		"overtime_id":      id,
+		"description":      overtime.Description,
+		"telegram_user_id": overtime.TelegramUserID,
+	}, c)
+
+	helpers.MyLogger("debug", "OvertimeManagement", "DeleteRecordOvertime", "service", "calling repository to delete overtime record", map[string]interface{}{
+		"overtime_id": id,
+	}, c)
 	err = o.OvertimeRepository.DeleteRecordOvertime(id, c, tx)
 	if err != nil {
 		helpers.MyLogger("error", "OvertimeManagement", "DeleteRecordOvertime", "service", "error deleting overtime record", map[string]interface{}{
@@ -462,6 +582,7 @@ func (o *OvertimeService) DeleteRecordOvertime(id uint, c *fiber.Ctx, tx *gorm.D
 
 	helpers.MyLogger("info", "OvertimeManagement", "DeleteRecordOvertime", "service", "overtime record deleted successfully", map[string]interface{}{
 		"overtime_id": id,
+		"deleted_by":  userID,
 	}, c)
 	return helpers.Response(c, fiber.StatusOK, "Overtime record deleted successfully", nil)
 }

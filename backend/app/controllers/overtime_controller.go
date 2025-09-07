@@ -224,16 +224,8 @@ func (o *OvertimeController) GetRecordByID(c *fiber.Ctx) error {
 func (o *OvertimeController) UpdateRecordOvertime(c *fiber.Ctx) error {
 	helpers.MyLogger("debug", "OvertimeManagement", "UpdateRecordOvertime", "controller", "start update overtime record", nil, c)
 
-	idStr := c.Params("id")
-	id, err := strconv.ParseUint(idStr, 10, 32)
-	if err != nil {
-		helpers.MyLogger("error", "OvertimeManagement", "UpdateRecordOvertime", "controller", "error parse overtime ID", map[string]interface{}{
-			"error": err.Error(),
-		}, c)
-		return helpers.ResponseErrorBadRequest(c, "Invalid overtime ID", nil)
-	}
-
-	var payload payloads.CreateNewRecordOvertime
+	// Parse payload first to get ID from body if needed
+	var payload payloads.UpdateRecordOvertime
 	if err := helpers.ValidateBody(&payload, c); err != nil {
 		helpers.MyLogger("error", "OvertimeManagement", "UpdateRecordOvertime", "controller", "error validate body", map[string]interface{}{
 			"error": err.Error(),
@@ -242,6 +234,36 @@ func (o *OvertimeController) UpdateRecordOvertime(c *fiber.Ctx) error {
 			return helpers.ResponseErrorBadRequest(c, customErr.Message, customErr.Data)
 		}
 		return helpers.ResponseErrorBadRequest(c, "Invalid payload", nil)
+	}
+
+	// Get overtime ID from URL params first, then from request body
+	var id uint
+	idStr := c.Params("id")
+
+	if idStr != "" {
+		// Try to get ID from URL params
+		parsedID, err := strconv.ParseUint(idStr, 10, 32)
+		if err != nil {
+			helpers.MyLogger("error", "OvertimeManagement", "UpdateRecordOvertime", "controller", "error parse overtime ID from URL params", map[string]interface{}{
+				"error":  err.Error(),
+				"id_str": idStr,
+			}, c)
+			return helpers.ResponseErrorBadRequest(c, "Invalid overtime ID in URL", nil)
+		}
+		id = uint(parsedID)
+		helpers.MyLogger("debug", "OvertimeManagement", "UpdateRecordOvertime", "controller", "using overtime ID from URL params", map[string]interface{}{
+			"overtime_id": id,
+		}, c)
+	} else if payload.ID != 0 {
+		// If no URL params, try to get ID from request body
+		id = uint(payload.ID)
+		helpers.MyLogger("debug", "OvertimeManagement", "UpdateRecordOvertime", "controller", "using overtime ID from request body", map[string]interface{}{
+			"overtime_id": id,
+		}, c)
+	} else {
+		// Neither URL params nor request body has ID
+		helpers.MyLogger("error", "OvertimeManagement", "UpdateRecordOvertime", "controller", "no overtime ID provided in URL params or request body", nil, c)
+		return helpers.ResponseErrorBadRequest(c, "Overtime ID is required either in URL (/v1/overtime/{id}) or in request body (id field)", nil)
 	}
 
 	tx := database.ClientPostgres.Begin()
@@ -259,17 +281,71 @@ func (o *OvertimeController) UpdateRecordOvertime(c *fiber.Ctx) error {
 	return nil
 }
 
-// DeleteRecordOvertime deletes an overtime record
+// DeleteRecordOvertime deletes an overtime record with flexible ID source (URL params or request body)
 func (o *OvertimeController) DeleteRecordOvertime(c *fiber.Ctx) error {
 	helpers.MyLogger("debug", "OvertimeManagement", "DeleteRecordOvertime", "controller", "start delete overtime record", nil, c)
 
+	// Get overtime ID from URL params first, then from request body
+	var id uint
 	idStr := c.Params("id")
-	id, err := strconv.ParseUint(idStr, 10, 32)
-	if err != nil {
-		helpers.MyLogger("error", "OvertimeManagement", "DeleteRecordOvertime", "controller", "error parse overtime ID", map[string]interface{}{
-			"error": err.Error(),
+
+	if idStr != "" {
+		// Try to get ID from URL params
+		parsedID, err := strconv.ParseUint(idStr, 10, 32)
+		if err != nil {
+			helpers.MyLogger("error", "OvertimeManagement", "DeleteRecordOvertime", "controller", "error parse overtime ID from URL params", map[string]interface{}{
+				"error":  err.Error(),
+				"id_str": idStr,
+			}, c)
+			return helpers.ResponseErrorBadRequest(c, "Invalid overtime ID in URL", nil)
+		}
+		id = uint(parsedID)
+		helpers.MyLogger("debug", "OvertimeManagement", "DeleteRecordOvertime", "controller", "using overtime ID from URL params", map[string]interface{}{
+			"overtime_id": id,
 		}, c)
-		return helpers.ResponseErrorBadRequest(c, "Invalid overtime ID", nil)
+	} else {
+		// Try to get ID from request body using simple JSON parsing
+		var payload map[string]interface{}
+		if err := c.BodyParser(&payload); err != nil {
+			helpers.MyLogger("error", "OvertimeManagement", "DeleteRecordOvertime", "controller", "error parsing request body", map[string]interface{}{
+				"error": err.Error(),
+			}, c)
+			return helpers.ResponseErrorBadRequest(c, "Invalid JSON format in request body", nil)
+		}
+
+		idValue, exists := payload["id"]
+		if !exists {
+			helpers.MyLogger("error", "OvertimeManagement", "DeleteRecordOvertime", "controller", "ID field not found in request body", nil, c)
+			return helpers.ResponseErrorBadRequest(c, "ID field is required in request body", nil)
+		}
+
+		// Type assertion for ID value
+		var idFloat float64
+		switch v := idValue.(type) {
+		case float64:
+			idFloat = v
+		case int:
+			idFloat = float64(v)
+		case int64:
+			idFloat = float64(v)
+		default:
+			helpers.MyLogger("error", "OvertimeManagement", "DeleteRecordOvertime", "controller", "ID field must be a number", map[string]interface{}{
+				"id_value": idValue,
+			}, c)
+			return helpers.ResponseErrorBadRequest(c, "ID field must be a number", nil)
+		}
+
+		if idFloat <= 0 {
+			helpers.MyLogger("error", "OvertimeManagement", "DeleteRecordOvertime", "controller", "ID must be greater than 0", map[string]interface{}{
+				"id_value": idFloat,
+			}, c)
+			return helpers.ResponseErrorBadRequest(c, "ID must be greater than 0", nil)
+		}
+
+		id = uint(idFloat)
+		helpers.MyLogger("debug", "OvertimeManagement", "DeleteRecordOvertime", "controller", "using overtime ID from request body", map[string]interface{}{
+			"overtime_id": id,
+		}, c)
 	}
 
 	tx := database.ClientPostgres.Begin()
@@ -278,7 +354,7 @@ func (o *OvertimeController) DeleteRecordOvertime(c *fiber.Ctx) error {
 	helpers.MyLogger("debug", "OvertimeManagement", "DeleteRecordOvertime", "controller", "start calling service for delete overtime record", map[string]interface{}{
 		"overtime_id": id,
 	}, c)
-	if err := o.OvertimeService.DeleteRecordOvertime(uint(id), c, tx); err != nil {
+	if err := o.OvertimeService.DeleteRecordOvertime(id, c, tx); err != nil {
 		helpers.MyLogger("error", "OvertimeManagement", "DeleteRecordOvertime", "controller", "error delete overtime record", map[string]interface{}{
 			"error": err.Error(),
 		}, c)

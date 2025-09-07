@@ -26,6 +26,18 @@ type GetRecordBetweenDateRequest struct {
 	EndDate    string `json:"end_date" validate:"required" example:"2024-01-31"`
 }
 
+type UpdateRecordOvertime struct {
+	ID            int64   `json:"id" validate:"required"`
+	TelegramID    int64   `json:"telegram_id"`                                    // optional
+	Date          string  `json:"date" example:"2024-01-15"`                      // optional
+	TimeStart     string  `json:"time_start" example:"2024-01-15T09:00:00"`       // optional
+	TimeStop      string  `json:"time_stop" example:"2024-01-15T18:00:00"`        // optional
+	Duration      float64 `json:"duration" example:"8.0"`                         // optional
+	BreakDuration float64 `json:"break_duration" example:"1.0"`                   // optional
+	Description   string  `json:"description" validate:"omitempty,min=3,max=255"` // optional
+	Category      string  `json:"category" validate:"omitempty,min=3,max=255"`    // optional
+}
+
 func (p *CreateNewRecordOvertime) CustomErrorsMessage(errors validator.ValidationErrors) []map[string]string {
 	var errorMessages []map[string]string
 	for _, err := range errors {
@@ -77,6 +89,26 @@ func (p *GetRecordBetweenDateRequest) CustomErrorsMessage(errors validator.Valid
 			errorMessages = append(errorMessages, map[string]string{"start_date": "Start date is required"})
 		case "EndDate":
 			errorMessages = append(errorMessages, map[string]string{"end_date": "End date is required"})
+		}
+	}
+	return errorMessages
+}
+
+func (p *UpdateRecordOvertime) CustomErrorsMessage(errors validator.ValidationErrors) []map[string]string {
+	var errorMessages []map[string]string
+	for _, err := range errors {
+		field := err.Field()
+		switch field {
+		case "ID":
+			errorMessages = append(errorMessages, map[string]string{"id": "ID is required"})
+		case "Description":
+			errorMessages = append(errorMessages, map[string]string{"description": "Description must be at least 3 characters and maximum 255 characters"})
+		case "Category":
+			errorMessages = append(errorMessages, map[string]string{"category": "Category must be at least 3 characters and maximum 255 characters"})
+		case "Duration":
+			errorMessages = append(errorMessages, map[string]string{"duration": "Duration must be greater than 0"})
+		case "BreakDuration":
+			errorMessages = append(errorMessages, map[string]string{"break_duration": "Break duration must be greater than or equal to 0"})
 		}
 	}
 	return errorMessages
