@@ -12,6 +12,11 @@ import (
 // RequestLogMiddleware logs all HTTP requests to the database
 func RequestLogMiddleware() fiber.Handler {
 	return func(c *fiber.Ctx) error {
+		// Skip logging for health check endpoint to prevent database spam
+		if c.Path() == "/health" {
+			return c.Next()
+		}
+
 		c.Next()
 
 		var userID uint = 0
