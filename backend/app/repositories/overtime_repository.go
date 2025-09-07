@@ -38,7 +38,7 @@ func (o *OvertimeRepository) GetAllRecordOvertimeByTelegramID(telegramID int64, 
 		Preload("TelegramUser").
 		Joins("JOIN telegram_users ON telegram_users.id = overtimes.telegram_user_id").
 		Where("telegram_users.telegram_id = ?", telegramID).
-		Order("overtimes.date DESC, overtimes.created_at DESC").
+		Order("overtimes.id DESC").
 		Find(&overtimes).Error
 	if err != nil {
 		return err
@@ -74,7 +74,7 @@ func (o *OvertimeRepository) GetRecordBetweenDateByTelegramId(telegramID int64, 
 		Preload("TelegramUser").
 		Joins("JOIN telegram_users ON telegram_users.id = overtimes.telegram_user_id").
 		Where("telegram_users.telegram_id = ? AND DATE(overtimes.date) BETWEEN ? AND ?", telegramID, startDateStr, endDateStr).
-		Order("overtimes.date DESC, overtimes.created_at DESC").
+		Order("overtimes.id DESC").
 		Find(&overtimes).Error
 	if err != nil {
 		return err
