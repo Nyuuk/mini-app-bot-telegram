@@ -1,6 +1,9 @@
 package payloads
 
-import "github.com/go-playground/validator/v10"
+import (
+	"github.com/Nyuuk/mini-app-bot-telegram/backend/app/pkg/errors"
+	"github.com/go-playground/validator/v10"
+)
 
 type CreateNewTelegramPayload struct {
 	TelegramID int64  `json:"telegram_id" validate:"required"`
@@ -9,21 +12,51 @@ type CreateNewTelegramPayload struct {
 	LastName   string `json:"last_name" validate:"min=3,max=50"`
 }
 
-func (p *CreateNewTelegramPayload) CustomErrorsMessage(errors validator.ValidationErrors) []map[string]string {
+func (p *CreateNewTelegramPayload) CustomErrorsMessage(validationErrors validator.ValidationErrors) []map[string]string {
 	var errorMessages []map[string]string
-	for _, err := range errors {
+	for _, err := range validationErrors {
 		field := err.Field()
+		tag := err.Tag()
+		
 		switch field {
 		case "TelegramID":
-			errorMessages = append(errorMessages, map[string]string{"telegram_id": "Telegram ID is required"})
+			if tag == "required" {
+				errorMessages = append(errorMessages, map[string]string{
+					"telegram_id": "Telegram ID is required. Please provide a valid Telegram user ID.",
+				})
+			}
 		case "Username":
-			errorMessages = append(errorMessages, map[string]string{"username": "Username is required"})
+			if tag == "required" {
+				errorMessages = append(errorMessages, map[string]string{
+					"username": "Telegram username is required. Please provide your Telegram username.",
+				})
+			} else if tag == "min" || tag == "max" {
+				errorMessages = append(errorMessages, map[string]string{
+					"username": "Telegram username must be between 3 and 50 characters long.",
+				})
+			}
 		case "FirstName":
-			errorMessages = append(errorMessages, map[string]string{"first_name": "First name must be at least 3 characters"})
+			if tag == "min" || tag == "max" {
+				errorMessages = append(errorMessages, map[string]string{
+					"first_name": "First name must be between 3 and 50 characters long.",
+				})
+			}
 		case "LastName":
-			errorMessages = append(errorMessages, map[string]string{"last_name": "Last name must be at least 3 characters"})
+			if tag == "min" || tag == "max" {
+				errorMessages = append(errorMessages, map[string]string{
+					"last_name": "Last name must be between 3 and 50 characters long.",
+				})
+			}
 		}
 	}
+	
+	// If no specific errors were matched, provide a generic validation error
+	if len(errorMessages) == 0 {
+		errorMessages = append(errorMessages, map[string]string{
+			"validation_error": "Invalid payload. Please check your request data and try again.",
+		})
+	}
+	
 	return errorMessages
 }
 
@@ -33,18 +66,49 @@ type UpdateTelegramPayload struct {
 	LastName   string `json:"last_name" validate:"min=3,max=50"`
 }
 
-func (p *UpdateTelegramPayload) CustomErrorsMessage(errors validator.ValidationErrors) []map[string]string {
+func (p *UpdateTelegramPayload) CustomErrorsMessage(validationErrors validator.ValidationErrors) []map[string]string {
 	var errorMessages []map[string]string
-	for _, err := range errors {
+	for _, err := range validationErrors {
 		field := err.Field()
+		tag := err.Tag()
+		
 		switch field {
 		case "Username":
-			errorMessages = append(errorMessages, map[string]string{"username": "Username is required"})
+			if tag == "required" {
+				errorMessages = append(errorMessages, map[string]string{
+					"username": "Telegram username is required for update.",
+				})
+			} else if tag == "min" || tag == "max" {
+				errorMessages = append(errorMessages, map[string]string{
+					"username": "Telegram username must be between 3 and 50 characters long.",
+				})
+			}
 		case "FirstName":
-			errorMessages = append(errorMessages, map[string]string{"first_name": "First name must be at least 3 characters"})
+			if tag == "min" || tag == "max" {
+				errorMessages = append(errorMessages, map[string]string{
+					"first_name": "First name must be between 3 and 50 characters long.",
+				})
+			}
 		case "LastName":
-			errorMessages = append(errorMessages, map[string]string{"last_name": "Last name must be at least 3 characters"})
+			if tag == "min" || tag == "max" {
+				errorMessages = append(errorMessages, map[string]string{
+					"last_name": "Last name must be between 3 and 50 characters long.",
+				})
+			}
 		}
 	}
+	
+	// If no specific errors were matched, provide a generic validation error
+	if len(errorMessages) == 0 {
+		errorMessages = append(errorMessages, map[string]string{
+			"validation_error": "Invalid update payload. Please check your request data and try again.",
+		})
+	}
+	
 	return errorMessages
+}
+
+// TelegramErrorResponse creates a standardized error response for Telegram operations
+func TelegramErrorResponse(errorCode, message string, details any) errors.TelegramError {
+	return errors.NewTelegramError(errorCode, message, details)
 }

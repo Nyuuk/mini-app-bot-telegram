@@ -5,6 +5,7 @@ import (
 
 	"github.com/Nyuuk/mini-app-bot-telegram/backend/app/entities"
 	"github.com/Nyuuk/mini-app-bot-telegram/backend/app/payloads"
+	"github.com/Nyuuk/mini-app-bot-telegram/backend/app/pkg/errors"
 	"github.com/Nyuuk/mini-app-bot-telegram/backend/app/pkg/helpers"
 	"github.com/Nyuuk/mini-app-bot-telegram/backend/app/repositories"
 	"github.com/gofiber/fiber/v2"
@@ -36,7 +37,15 @@ func (t *TelegramService) CreateNewUserForNowUserActive(payload *payloads.Create
 		if helpers.IsDuplicateKeyError(err) {
 			helpers.Logger.Info().Msg("TelegramService: CreateNewUserForNowUserActive Telegram user already exists")
 			tx.Rollback()
-			return helpers.Response(c, fiber.StatusOK, "Telegram user already exists", nil)
+			// Return a specific Telegram error instead of generic response
+			return payloads.TelegramErrorResponse(
+				errors.ErrTelegramAlreadyLinked,
+				"Telegram account is already linked to another user. Please unlink it first or use a different Telegram account.",
+				map[string]interface{}{
+					"telegram_id": payload.TelegramID,
+					"user_id":     userID,
+				},
+			)
 		}
 		helpers.Logger.Error().Err(err).Msg("TelegramService: CreateNewUserForNowUserActive Error creating telegram user")
 		tx.Rollback()
@@ -48,7 +57,7 @@ func (t *TelegramService) CreateNewUserForNowUserActive(payload *payloads.Create
 		return err
 	}
 	helpers.Logger.Info().Interface("telegramUser", telegramUser).Msg("TelegramService: CreateNewUserForNowUserActive Telegram user created successfully")
-	return helpers.Response(c, fiber.StatusCreated, "Telegram user created successfully", telegramUser)
+	return helpers.Response(c, fiber.StatusCreated, "Telegram user linked successfully", telegramUser)
 }
 
 func (t *TelegramService) DeleteByTelegramID(telegramID int64, c *fiber.Ctx, tx *gorm.DB) error {
@@ -60,7 +69,13 @@ func (t *TelegramService) DeleteByTelegramID(telegramID int64, c *fiber.Ctx, tx 
 		if helpers.IsNotFoundError(err) {
 			helpers.MyLogger("info", "TelegramAccountLink", "DeleteByTelegramId", "service", "not found telegram user by telegram ID", nil, c)
 			tx.Rollback()
-			return helpers.Response(c, fiber.StatusNotFound, "Telegram user not found", nil)
+			return payloads.TelegramErrorResponse(
+				errors.ErrTelegramUserNotFound,
+				"Telegram user not found. The specified Telegram account is not linked to your account.",
+				map[string]interface{}{
+					"telegram_id": telegramID,
+				},
+			)
 		}
 		helpers.MyLogger("error", "TelegramAccountLink", "DeleteByTelegramId", "service", "error find telegram user by telegram ID", map[string]interface{}{
 			"error": err.Error(),
@@ -82,7 +97,7 @@ func (t *TelegramService) DeleteByTelegramID(telegramID int64, c *fiber.Ctx, tx 
 		return err
 	}
 	helpers.MyLogger("info", "TelegramAccountLink", "DeleteByTelegramId", "service", "success delete telegram user by telegram ID", nil, c)
-	return helpers.Response(c, fiber.StatusOK, "Telegram user deleted successfully", nil)
+	return helpers.Response(c, fiber.StatusOK, "Telegram user unlinked successfully", nil)
 }
 
 // find by user id
@@ -95,7 +110,7 @@ func (t *TelegramService) FindByUserID(userID uint, c *fiber.Ctx, tx *gorm.DB) e
 				"user_id_throw": userID,
 			}, c)
 			// tx.Rollback()
-			return helpers.Response(c, fiber.StatusNotFound, "Telegram user not found", nil)
+			return helpers.Response(c, fiber.StatusOK, "No Telegram accounts linked to your user profile", []entities.TelegramUser{})
 		}
 		helpers.MyLogger("error", "TelegramAccountLink", "FindByUserId", "service", "error find telegram user by user ID", map[string]interface{}{
 			"error": err.Error(),
@@ -103,9 +118,12 @@ func (t *TelegramService) FindByUserID(userID uint, c *fiber.Ctx, tx *gorm.DB) e
 		return err
 	}
 	helpers.MyLogger("info", "TelegramAccountLink", "FindByUserId", "service", "success find telegram user by user ID", map[string]interface{}{
-		"telegram_user": telegramUser,
+		"telegram_user_count": len(telegramUser),
 	}, c)
-	return helpers.Response(c, fiber.StatusOK, "Telegram user found successfully", telegramUser)
+	if len(telegramUser) == 0 {
+		return helpers.Response(c, fiber.StatusOK, "No Telegram accounts linked to your user profile", []entities.TelegramUser{})
+	}
+	return helpers.Response(c, fiber.StatusOK, "Telegram accounts retrieved successfully", telegramUser)
 }
 
 func (t *TelegramService) FindByTelegramID(telegramID int64, c *fiber.Ctx, tx *gorm.DB) error {
@@ -116,7 +134,13 @@ func (t *TelegramService) FindByTelegramID(telegramID int64, c *fiber.Ctx, tx *g
 			helpers.MyLogger("info", "TelegramAccountLink", "FindByTelegramId", "service", "not found telegram user by telegram ID", map[string]interface{}{
 				"telegram_id_throw": telegramID,
 			}, c)
-			return helpers.Response(c, fiber.StatusNotFound, "Telegram user not found", nil)
+			return payloads.TelegramErrorResponse(
+				errors.ErrTelegramUserNotFound,
+				"Telegram user not found. The specified Telegram account is not linked to any user.",
+				map[string]interface{}{
+					"telegram_id": telegramID,
+				},
+			)
 		}
 		helpers.MyLogger("error", "TelegramAccountLink", "FindByTelegramId", "service", "error find telegram user by telegram ID", map[string]interface{}{
 			"error": err.Error(),
@@ -126,7 +150,7 @@ func (t *TelegramService) FindByTelegramID(telegramID int64, c *fiber.Ctx, tx *g
 	helpers.MyLogger("info", "TelegramAccountLink", "FindByTelegramId", "service", "success find telegram user by telegram ID", map[string]interface{}{
 		"telegram_user": telegramUser,
 	}, c)
-	return helpers.Response(c, fiber.StatusOK, "Telegram user found successfully", telegramUser)
+	return helpers.Response(c, fiber.StatusOK, "Telegram user retrieved successfully", telegramUser)
 }
 
 
@@ -138,7 +162,13 @@ func (t *TelegramService) UpdateByTelegramID(telegramID int64, payload *payloads
 			helpers.MyLogger("info", "TelegramAccountLink", "UpdateByTelegramId", "service", "not found telegram user by telegram ID", map[string]interface{}{
 				"telegram_id_throw": telegramID,
 			}, c)
-			return helpers.Response(c, fiber.StatusNotFound, "Telegram user not found", nil)
+			return payloads.TelegramErrorResponse(
+				errors.ErrTelegramUserNotFound,
+				"Telegram user not found. Cannot update a Telegram account that is not linked.",
+				map[string]interface{}{
+					"telegram_id": telegramID,
+				},
+			)
 		}
 		helpers.MyLogger("error", "TelegramAccountLink", "UpdateByTelegramId", "service", "error find telegram user by telegram ID", map[string]interface{}{
 			"error": err.Error(),
